@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="http://googleads.github.io/videojs-ima/node_modules/video.js/dist/video-js.min.css"/>
+  <link rel="stylesheet" href="http://googleads.github.io/videojs-ima/node_modules/videojs-contrib-ads/dist/videojs.ads.css"/>
+  <link rel="stylesheet" href="http://googleads.github.io/videojs-ima/dist/videojs.ima.css"/>
+</head>
+
+<body>
+
+<h1>Demo example for Lrytas</h1>
+<video id="content_video" class="video-js vjs-default-skin"
+       controls preload="auto" width="640" height="480">
+  <source src="https://examples.adnuntius.com/video/content.mp4"
+          type="video/mp4"/>
+</video>
+<!-- Load dependent scripts -->
+<script src="http://googleads.github.io/videojs-ima/node_modules/video.js/dist/video.min.js"></script>
+<script src="http://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
+<script src="http://googleads.github.io/videojs-ima/node_modules/videojs-contrib-ads/dist/videojs.ads.min.js"></script>
+<script src="http://googleads.github.io/videojs-ima/dist/videojs.ima.js"></script>
+
+<p></p>
+<p>
+  Video player: <a href=https://github.com/googleads/videojs-ima>Google IMA SDK Plugin for Video.js</a>
+</p>
+
+<p>
+  Ads served by <a href=https://admin.adnuntius.com/line-items/line-item/b3z3x7cq3pxbz28v>this</a> Adnuntius line-item.
+</p>
+
+<p>
+  Playback controlled via the <a href=https://www.iab.com/guidelines/digital-video-multiple-ad-playlist-vmap-1-0-1/>VMAP</a> playlist:
+
+</p>
+
+<textarea readonly style="width: 850px; height: 270px; font-size: 10" id="vmap">
+<?xml version="1.0" encoding="UTF-8"?>
+  <vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
+    <vmap:AdBreak timeOffset="start" breakType="linear" breakId="preroll">
+	<vmap:AdSource id="preroll-1-ad-1" allowMultipleAds="false" followRedirects="true">
+	    <vmap:AdTagURI templateType="vast2">
+		<![CDATA[https://delivery.adnuntius.com/i?auId=000000000004eecb&tt=vast2]]>
+            </vmap:AdTagURI>
+	</vmap:AdSource>
+    </vmap:AdBreak>
+</vmap:VMAP>
+	</textarea>
+
+<script type="text/javascript">
+    var player = videojs('content_video');
+
+    var options = {
+        id: 'content_video',
+        adsResponse: document.getElementById("vmap").value
+    };
+
+    player.ima(options);
+</script>
+
+</body>
+</html>
