@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body>
+
+<h3>Adnuntius Ad Tag Generator and Tester</h3>
+<hr>
+<p><small>Ad request: auId = 000000000005f2ca</small></p>
+<div id="adn-000000000005f2ca" style="display: none; border: 10px solid black;"></div>
+<script type="text/javascript">
+(function(d, s, e, t){e=d.createElement(s);e.type='text/java'+s;e.async='async';e.src='http'+('https:'===location.protocol?'s':'')+'://cdn.adnuntius.com/adn.js';t=d.getElementsByTagName(s)[0]; t.parentNode.insertBefore(e, t);})(document,'script');
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({ adUnits: [
+      { auId: '000000000005f2ca', auW: '1500', auH: '1500', resizeOnPageLoad: false }
+   ]});
+});
+</script>
+</body>
+</html>
