@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Ad in Bottom Corner</title>
+</head>
+<body>
+  <div style="display: block; margin-left: auto; margin-right: auto; width: 1200px; padding: 10px 20px; border: 1px solid black;">
+    <h1>Ad in Corner Example</h1>
+    <h2>Example created by AdSolutions</h2>
+    <p>Just some text in the page to mimic content.</p>
+    <div id="adn-00000000000614db" style="display: none; position: absolute; bottom: 0; right: 0"></div>
+    <script type="text/javascript">
+        (function(d, s, e, t) {
+            e = d.createElement(s);
+            e.type = 'text/java' + s;
+            e.async = 'async';
+            e.src = 'http' + ('https:' === location.protocol ? 's' : '') + '://cdn.adnuntius.com/adn.js';
+            t = d.getElementsByTagName(s)[0];
+            t.parentNode.insertBefore(e, t);
+        })(document, 'script');
+        window.adn = window.adn || {};
+        adn.calls = adn.calls || [];
+        adn.calls.push(function() {
+            adn.request({
+                adUnits: [
+                    {auId: '00000000000614db', auW: '1800', auH: '1000', kv: {'key': ['font']}}
+                ]
+            });
+        });
+    </script>
+  </div>
+</body>
+</html>
