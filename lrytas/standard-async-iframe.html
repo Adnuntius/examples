@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lrytas standard Async Iframe</title>
+</head>
+<body>
+<h3>Lrytas Standard Async Iframe</h3>
+<p>We have an standard asynchronous call that populates an Iframe with the AdForm ad.</p>
+<p>Here, the fruit will drop from the top of the iframe only. The fruit will not fall from the top of the page.</p>
+<div id="adn-00000000000432e3" style="display: none"></div>
+<script type="text/javascript">
+(function(d, s, e, t){e=d.createElement(s);e.type='text/java'+s;e.async='async';e.src='http'+('https:'===location.protocol?'s':'')+'://cdn.adnuntius.com/adn.js';t=d.getElementsByTagName(s)[0]; t.parentNode.insertBefore(e, t);})(document,'script');
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({ adUnits: [
+      { auId: '00000000000432e3', auW: '10000', auH: '10000', kv: { 'isolate': ['lrytas-adform'] } }
+   ]});
+});
+</script>
+</body>
+</html>
