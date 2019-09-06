@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lrytas standard Async Div</title>
+</head>
+<body>
+<h3>Lrytas Standard Async Div</h3>
+<p>We have an standard asynchronous call that populates a div inside the parent page with the AdForm ad.</p>
+<p>Rendering of the ad is blocked because of document.write, which doesn't work with asynchronous content loading.</p>
+<p>This is a problem with the AdForm ad itself using document.write, which is an old practice that should no longer be used.</p>
+<div id="adn-00000000000432e3" style="display: none"></div>
+<script type="text/javascript">
+(function(d, s, e, t){e=d.createElement(s);e.type='text/java'+s;e.async='async';e.src='http'+('https:'===location.protocol?'s':'')+'://cdn.adnuntius.com/adn.js';t=d.getElementsByTagName(s)[0]; t.parentNode.insertBefore(e, t);})(document,'script');
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({ adUnits: [
+      { container: 'div', auId: '00000000000432e3', auW: '10000', auH: '10000', kv: { 'isolate': ['lrytas-adform'] } }
+   ]});
+});
+</script>
+</body>
+</html>
