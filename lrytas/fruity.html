@@ -13,7 +13,7 @@
 <!-- isolate ad unit (00000000000432e3) -->
 <div id="adn-00000000000432e3" style="display: none"></div>
 <script type="text/javascript">
-(function(d, s, e, t){e=d.createElement(s);e.type='text/java'+s;e.async='async';e.src='http://localhost:8001/adn.src.js';t=d.getElementsByTagName(s)[0]; t.parentNode.insertBefore(e, t);})(document,'script');
+(function(d, s, e, t){e=d.createElement(s);e.type='text/java'+s;e.async='async';e.src = 'http' + ('https:' === location.protocol ? 's' : '') + '://cdn.adnuntius.com/adn.js';t=d.getElementsByTagName(s)[0]; t.parentNode.insertBefore(e, t);})(document,'script');
 window.adn = window.adn || {}; adn.calls = adn.calls || [];
 adn.calls.push(function() {
    adn.request({ adUnits: [
