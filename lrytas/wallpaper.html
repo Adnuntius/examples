@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lrytas Example with Wallpaper</title>
+</head>
+<body><h3>Lrytas Example with Wallpaper</h3>
+<hr>
+<p><small>Ad request: auId = 00000000000432e3</small></p>
+<div id="wallpaper-holder" style="display: none"></div>
+<div id="wallpaper"></div>
+<script type="text/javascript" src="https://cdn.adnuntius.com/adn.js" async></script>
+<script type="text/javascript">
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({ adUnits: [
+      { targetId: 'wallpaper-holder', auId: '00000000000432e3', auW: '10000', auH: '10000', kv: { 'isolate': ['lrytas-wallpaper'] } }
+   ]});
+});
+</script>
+</body>
+</html>
