@@ -20,11 +20,12 @@ try {
           },
           dev: {
             id: 'dev',
-            as: 'adserver.dev.adn.bitshift.technology'
+            as: 'adserver.dev.adnuntius.com',
+            pg: 'dev.data.adnuntius.com'
           },
           staging: {
             id: 'staging',
-            as: 'adserver.staging.adn.bitshift.technology'
+            as: 'adserver.staging.adnuntius.com'
           },
           production: {
             id: 'production',
@@ -113,7 +114,7 @@ try {
         scriptOverride: {
           github: {
             id: 'github',
-            url: 'https://raw.githubusercontent.com/Adnuntius/examples/master/adn.dev.src.js'
+            url: 'https://adnuntius.github.io/examples/adn/adn.dev.src.js'
           }
         },
         errorStatus: {
@@ -142,7 +143,8 @@ try {
       DEBUG_UI_URL_STRING = "adndebug123",
       DEBUG_UI_MAIN_DATA_DIV_ID = "adnDebugDataDiv",
       DEBUG_UI_DATA_DIV_PREFIX = "adn-data-div-",
-      STORAGE_METADATA_KEY = "adn.metaData",
+      STORAGE_ADV_METADATA_KEY = "adn.metaData",
+      STORAGE_DAT_KEY = "adn.data",
       STORAGE_CONSENT_KEY = "adn.consent",
       VALID_CONSENT_VALUES = {PROFILE: 'PROFILE', COUNTS: 'COUNTS', EXTERNAL: 'EXTERNAL', TARGETING: 'TARGETING'},
       requestMethods,
@@ -496,6 +498,26 @@ try {
         }
       };
 
+      var setUpLocations = function(args, locType) {
+        var server, protocol;
+
+        var theEnvId = args.env || ENUMS.env.production.id;
+        server = ENUMS.env[theEnvId] ? ENUMS.env[theEnvId] : ENUMS.env.production;
+
+        var defaultProtocol = 'http' + ((misc.isTestAddress(win.location.href) || theEnvId === ENUMS.env.localhost.id || win.location.protocol === 'http:') ? '' : 's');
+        protocol = (args.protocol === 'https' || args.protocol === 'http' ? args.protocol : defaultProtocol) + '://';
+
+        var testEnv = misc.isTestAddress(theEnvId);
+        gDevMode = testEnv || gDevMode;
+
+        var serverUrlBase = gDevMode && (theEnvId || '').indexOf("http") === 0 ? theEnvId : protocol + server[locType || 'as'];
+        return {
+          serverUrlBase: serverUrlBase,
+          baseRequestLoc: serverUrlBase + (testEnv ? "?" : "/i?") + "tzo=" + new Date().getTimezoneOffset(),
+          isTestEnv: testEnv,
+        };
+      };
+
       adn.lib = {
         setDevMode: function(modeValue) {
           gDevMode = modeValue === true;
@@ -517,7 +539,7 @@ try {
             hook.gAdLocs = gAdLocs;
             hook.gDevMode = gDevMode;
             hook.gUserIds = gUserIds;
-            hook.storageMetadataKey = STORAGE_METADATA_KEY;
+            hook.storageMetadataKey = STORAGE_ADV_METADATA_KEY;
             hook.cookies = cookies;
             hook.parentMethods = parentMethods;
             hook.pFrameMethods = pFrameMethods;
@@ -548,20 +570,18 @@ try {
           }
           return ENUMS.env.production.id;
         },
+        getDataLocs: function(args) {
+          var locations = setUpLocations(args, 'pg');
+
+          var urlArgs = {};
+          var qParams = ['browserId', 'folderId', 'sessionId'];
+          misc.copyArgValues(urlArgs, args, qParams);
+          return {
+            page: locations.baseRequestLoc.replace("/i?", "/page?") + misc.encodeAsUrlParams(urlArgs, true)
+          };
+        },
         getRequestLocs: function(args, checkImmeasurable) {
-          var server, protocol, serverUrlBase, baseRequestLoc, impRequestLoc, viewImpRequestLoc, visImpRequestLoc,
-            customRequestLoc, retargetingLoc, convLoc, previewLoc, renderedImpRequestLoc;
-
-          var theEnvId = args.env || ENUMS.env.production.id;
-          server = ENUMS.env[theEnvId] ? ENUMS.env[theEnvId] : ENUMS.env.production;
-
-          var defaultProtocol = 'http' + ((misc.isTestAddress(win.location.href) || theEnvId === ENUMS.env.localhost.id || win.location.protocol === 'http:') ? '' : 's');
-          protocol = (args.protocol === 'https' || args.protocol === 'http' ? args.protocol : defaultProtocol) + '://';
-
-          var testEnv = misc.isTestAddress(theEnvId);
-          gDevMode = testEnv || gDevMode;
-          serverUrlBase = gDevMode && (theEnvId || '').indexOf("http") === 0 ? theEnvId : protocol + server.as;
-          baseRequestLoc = serverUrlBase + (testEnv ? "?" : "/i?") + "tzo=" + new Date().getTimezoneOffset();
+          var locations = setUpLocations(args);
 
           var urlArgs = {};
           var qParams = ['usi', 'siteId', 'latitude', 'longitude', 'segments', 'ctx', 'sdk'];
@@ -572,23 +592,15 @@ try {
           if (checkImmeasurable && !adn.util.isTopWindow() && !misc.supportsIntersectionObserver()) {
             urlArgs.immeasurable = true;
           }
-          impRequestLoc = baseRequestLoc + misc.encodeAsUrlParams(urlArgs, true);
-          renderedImpRequestLoc = baseRequestLoc.replace("/i?", "/b?");
-          viewImpRequestLoc = baseRequestLoc.replace("/i?", "/v?");
-          visImpRequestLoc = baseRequestLoc.replace("/i?", "/s?");
-          customRequestLoc = baseRequestLoc.replace("/i?", "/u?");
-          retargetingLoc = baseRequestLoc.replace("/i?", "/r?");
-          convLoc = baseRequestLoc.replace("/i?", "/conv?");
-          previewLoc = serverUrlBase + (testEnv ? "?" : "/preview?");
           return {
-            imp: impRequestLoc,
-            rendered: renderedImpRequestLoc,
-            viewable: viewImpRequestLoc,
-            visible: visImpRequestLoc,
-            custom: customRequestLoc,
-            retargeting: retargetingLoc,
-            conversion: convLoc,
-            preview: previewLoc
+            imp: locations.baseRequestLoc + misc.encodeAsUrlParams(urlArgs, true),
+            rendered: locations.baseRequestLoc.replace("/i?", "/b?"),
+            viewable: locations.baseRequestLoc.replace("/i?", "/v?"),
+            visible: locations.baseRequestLoc.replace("/i?", "/s?"),
+            custom: locations.baseRequestLoc.replace("/i?", "/u?"),
+            retargeting: locations.baseRequestLoc.replace("/i?", "/r?"),
+            conversion: locations.baseRequestLoc.replace("/i?", "/conv?"),
+            preview: locations.serverUrlBase + (locations.isTestEnv ? "?" : "/preview?")
           };
         },
         sendRenderedImps: function(rTokens, renderedLoc) {
@@ -613,7 +625,7 @@ try {
                 return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
               }
               if (jsonResponse && jsonResponse.metaData) {
-                cookies.writeLs(jsonResponse.metaData);
+                cookies.writeAdvLs(jsonResponse.metaData);
               }
             }
           });
@@ -728,20 +740,22 @@ try {
                 adn.out.devOutput("Not executing script type", "showAdContent", el.type, el);
                 return;
               }
+
+              var allAttr = {};
+              adn.util.forEach(el.attributes, function(attr) {
+                if (attr.specified) {
+                  allAttr[attr.name] = attr.value;
+                }
+              });
+
               if (el.src) {
-                var allAttr = {};
-                adn.util.forEach(el.attributes, function(attr) {
-                  if (attr.specified) {
-                    allAttr[attr.name] = attr.value;
-                  }
-                });
                 var src = el.src;
                 el.parentNode.removeChild(el);
                 misc.loadScriptSrc(src, adUnitArgs.widgetId, allAttr);
               } else {
                 var innerHtml = el.innerHTML;
                 el.parentNode.removeChild(el);
-                misc.loadScriptContent(innerHtml, adUnitArgs.widgetId);
+                misc.loadScriptContent(innerHtml, adUnitArgs.widgetId, allAttr);
               }
             });
             dom.showTargetDiv(targetEl, adUnitArgs);
@@ -798,7 +812,19 @@ try {
       };
     }());
 
-    var misc = {
+    var misc;
+    (function() {
+      var ALPHABET = '012356789bcdfghjklmnpqrstvwxyz',
+        ID_LENGTH = 16;
+
+      misc = {
+        uuid: function() {
+          var rtn = '';
+          for (var i = 0; i < ID_LENGTH; i++) {
+            rtn += ALPHABET.charAt(Math.floor(Math.random() * ALPHABET.length));
+          }
+          return rtn;
+        },
         supportsSrcDoc: function() {
           return !!("srcdoc" in doc.createElement("iframe"));
         },
@@ -861,13 +887,18 @@ try {
             return adn.out.output(e, "loadScriptSrc: in catch block");
           }
         },
-        loadScriptContent: function(content, targetId) {
+        loadScriptContent: function(content, targetId, attributes) {
           if (!adn.util.isString(content)) {
             return adn.out.output("content should be a string", "loadScriptContent", content);
           }
           try {
             var scriptEl = doc.createElement('script');
             scriptEl.type = 'text/javascript';
+
+            adn.util.forEach(attributes || {}, function(value, key) {
+              scriptEl.setAttribute(key, value);
+            });
+
             var scriptContent = doc.createTextNode(content);
             scriptEl.appendChild(scriptContent);
             var targetEl = doc.getElementById(targetId) || doc.body;
@@ -1083,8 +1114,7 @@ try {
             return;
           }
           var htmlAdContentOnly = adContent.substring(adnResponseStringIndex, endStringIndex);
-          htmlAdContentOnly = "<div id=\"" + newResponseCtrId + "\">" + htmlAdContentOnly;
-          htmlAdContentOnly.replace("</body>", "</div></body>");
+          htmlAdContentOnly = "<div id=\"" + newResponseCtrId + "\">" + htmlAdContentOnly + "</div>";
 
           var jsString = "adn.inIframe.processAdResponse({";
           var replaceJsString = jsString + " widgetId: '" + newResponseCtrId + "', ";
@@ -1179,7 +1209,7 @@ try {
         },
         setAndReturnMetaData: function(theData) {
           var ajaxData = theData;
-          var metaData = cookies.getAllStorageAsObj();
+          var metaData = cookies.getAllAdvStorageAsObj();
           if (adn.util.hasProperties(metaData)) {
             ajaxData = ajaxData || {};
             ajaxData.metaData = metaData;
@@ -1198,8 +1228,10 @@ try {
           });
           return aObj;
         }
-      },
-      pixel = {
+      };
+    }());
+
+    var pixel = {
         regDestination: function() {
           var meta = misc.getQueryParamsByName("adnMeta");
           if (!adn.util.isNotBlankString(meta)) {
@@ -1212,7 +1244,7 @@ try {
           } catch(e) {
             return adn.out.output("JSON Parse string for adnMeta failed", "regDestination", jsonString);
           }
-          cookies.writeLs(metaDataObj);
+          cookies.writeAdvLs(metaDataObj);
         }
       },
       ev = {
@@ -1492,7 +1524,7 @@ try {
         };
 
         var getSessionStorage = function() {
-          var storageObj = getStorageData(win.sessionStorage, STORAGE_METADATA_KEY);
+          var storageObj = getStorageData(win.sessionStorage, STORAGE_ADV_METADATA_KEY);
           if (!adn.util.isObject(storageObj)) {
             storageObj = {};
           }
@@ -1570,10 +1602,10 @@ try {
               doc.cookie = key + "=" + (value || "") + expires + "; path=/";
             });
           },
-          clearLocalStorage: function() {
+          clearAdvLocalStorage: function() {
             win.localStorage.removeItem(STORAGE_CONSENT_KEY);
-            win.localStorage.removeItem(STORAGE_METADATA_KEY);
-            win.sessionStorage.removeItem(STORAGE_METADATA_KEY);
+            win.localStorage.removeItem(STORAGE_ADV_METADATA_KEY);
+            win.sessionStorage.removeItem(STORAGE_ADV_METADATA_KEY);
           },
           writeConsent: function(consentArray) {
             if (!consentArray || !adn.util.isArray(consentArray)) {
@@ -1602,16 +1634,16 @@ try {
             }
             return getLocalStorage(STORAGE_CONSENT_KEY);
           },
-          writeLs: function(cookieObj) {
+          writeAdvLs: function(cookieObj) {
             if (!adn.util.isObject(cookieObj) || !adn.util.hasProperties(cookieObj)) {
-              return adn.out.devOutput("Not an object of data", "writeLs");
+              return adn.out.devOutput("Not an object of data", "writeAdvLs");
             }
             if (!gUseLocalStorage) {
               return;
             }
             var sessionParams = {},
               lsArray = [],
-              currentStorage = getLocalStorage(STORAGE_METADATA_KEY, true);
+              currentStorage = getLocalStorage(STORAGE_ADV_METADATA_KEY, true);
 
             adn.util.forEach(currentStorage, function(el) {
               if (adn.util.isNotBlankString(el.value) && adn.util.isNotBlankString(el.key) && el.key.indexOf('!') > 0 && !cookieObj[el.key] && el.exp && el.exp > misc.getUnixTimestamp()) {
@@ -1632,14 +1664,41 @@ try {
               sessionObj[key] = value;
             });
 
-            win.sessionStorage.setItem(STORAGE_METADATA_KEY, JSON.stringify(sessionObj));
-            win.localStorage.setItem(STORAGE_METADATA_KEY, JSON.stringify(lsArray));
+            win.sessionStorage.setItem(STORAGE_ADV_METADATA_KEY, JSON.stringify(sessionObj));
+            win.localStorage.setItem(STORAGE_ADV_METADATA_KEY, JSON.stringify(lsArray));
           },
-          getAllStorageAsObj: function() {
+          writeDatLs: function(cookieObj) {
+            if (!adn.util.isObject(cookieObj) || !adn.util.hasProperties(cookieObj)) {
+              return adn.out.devOutput("Not an object of data", "writeAdvLs");
+            }
+            if (!gUseLocalStorage) {
+              return;
+            }
+            var sessionParams = {},
+              lsParams = {};
+
+            adn.util.forEach(cookieObj, function(value, key) {
+              if (key.indexOf("sessionId") === 0) {
+                sessionParams[key] = value;
+              } else if (key.indexOf("browserId") === 0) {
+                lsParams[key] = value;
+              }
+            });
+
+            win.sessionStorage.setItem(STORAGE_DAT_KEY, JSON.stringify(sessionParams));
+            win.localStorage.setItem(STORAGE_DAT_KEY, JSON.stringify(lsParams));
+          },
+          getAllDatStorageAsObj: function() {
             if (!gUseLocalStorage) {
               return {};
             }
-            return misc.assign(getLocalStorage(STORAGE_METADATA_KEY), getSessionStorage(STORAGE_METADATA_KEY));
+            return misc.assign(getStorageData(win.sessionStorage, STORAGE_DAT_KEY), getStorageData(win.localStorage, STORAGE_DAT_KEY));
+          },
+          getAllAdvStorageAsObj: function() {
+            if (!gUseLocalStorage) {
+              return {};
+            }
+            return misc.assign(getLocalStorage(STORAGE_ADV_METADATA_KEY), getSessionStorage(STORAGE_ADV_METADATA_KEY));
           }
         };
       }()),
@@ -1661,6 +1720,10 @@ try {
             wSpecArgs.returnedKeywords = composedAds.keywords;
             wSpecArgs.returnedSegments = composedAds.segments;
             renderedLoc = wSpecArgs.renderedImpRequestLoc;
+
+            if (au.matchedAdCount > 0 && au.html.indexOf("adnOptionContainerDiv") > 0) {
+              wSpecArgs.container = ENUMS.container.div;
+            }
 
             if (au.matchedAdCount === 0) {
               wSpecArgs.adStatus = ENUMS.adStatus.processed;
@@ -1812,7 +1875,7 @@ try {
                     return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
                   }
                   if (jsonResponse && jsonResponse.metaData) {
-                    cookies.writeLs(jsonResponse.metaData);
+                    cookies.writeAdvLs(jsonResponse.metaData);
                   }
                 }
               });
@@ -2139,7 +2202,7 @@ try {
                     functionContext: ENUMS.functionContext.inIframe,
                     method: 'updateMetricsFromParent',
                     metricsFromParent: metrics.join(","),
-                    metaData: cookies.getAllStorageAsObj(),
+                    metaData: cookies.getAllAdvStorageAsObj(),
                     isDivContainer: spec.container === ENUMS.container.div || spec.isDivContainer
                   });
                 }
@@ -2979,7 +3042,7 @@ try {
                     return adn.out.output("No ad units defined in returned data", "composed", wAdUnits[0].onError);
                   }
                   if (ads.metaData) {
-                    cookies.writeLs(ads.metaData);
+                    cookies.writeAdvLs(ads.metaData);
                   }
                   adn.util.forEach(ads.adUnits, function(a) {
                     gComposedAds[a.targetId] = a;
@@ -3072,7 +3135,7 @@ try {
       };
 
       adn.clearLocalStorage = function() {
-        cookies.clearLocalStorage();
+        cookies.clearAdvLocalStorage();
       };
 
       adn.useLocalStorage = function(useLocalStorage) {
@@ -3324,7 +3387,7 @@ try {
               var jsonData = JSON.parse(ajax.responseText);
               makeResponse({responseJSON: jsonData}, reqArgs.onSuccess);
               if (jsonData.metaData) {
-                cookies.writeLs(jsonData.metaData);
+                cookies.writeAdvLs(jsonData.metaData);
               }
               return jsonData;
             } catch(e) {
@@ -3375,7 +3438,7 @@ try {
               return adn.out.output(e, "ajax.onreadystatechange: catch block", ajax);
             }
             if (ajaxResponse.metaData) {
-              cookies.writeLs(ajaxResponse.metaData);
+              cookies.writeAdvLs(ajaxResponse.metaData);
             }
             return;
           }
@@ -3436,11 +3499,16 @@ try {
 
           adn.calls.push(function() {
             pbjs.que.push(function() {
-              pbjs.setTargetingForGPTAsync && pbjs.setTargetingForGPTAsync();
+              var setGptAsync = adn.util.isTrue(misc.getParam(config, 'gptAsync'));
+              if (setGptAsync) {
+                pbjs.setTargetingForGPTAsync && pbjs.setTargetingForGPTAsync();
+              }
               var resps = pbjs.getBidResponses();
+              var noBidReqs = pbjs.getNoBids();
               var isDebugMode = adn.util.isTrue(misc.getParam(config, 'debug'));
               if (isDebugMode) {
-                adn.out.output("Raw bid responses from prebid", "headerBidRequest", resps);
+                adn.out.output("Raw bid responses in prebid", "headerBidRequest", resps);
+                adn.out.output("The no bid requests in prebid", "headerBidRequest", noBidReqs);
               }
               adnRequest.headerBids = [];
               adn.util.forEach(resps, function(resp) {
@@ -3449,6 +3517,16 @@ try {
                 });
               });
 
+              adn.util.forEach(noBidReqs, function(nbReq) {
+                adn.util.forEach(nbReq.bids, function(bid) {
+                  var bidClone = misc.clone(bid);
+                  bidClone.cpm = 0;
+                  bidClone.bidderCode = bid.bidderCode || bid.bidder;
+                  bidClone.statusMessage = "Bid returned empty or error response";
+                  bidClone.sizes = bid.sizes;
+                  adnRequest.headerBids.push(bidClone);
+                });
+              });
 
               if (isDebugMode) {
                 adn.out.output("Header bids sent through to Adnuntius", "headerBidRequest", adnRequest.headerBids);
@@ -3463,6 +3541,31 @@ try {
         win.setTimeout(function() {
           initAdserver();
         }, FAILSAFE_TIMEOUT);
+      };
+
+      adn.view = function(folderId, aArgs) {
+        var getKey = function(prefix, folderId) {
+          return prefix + "|" + folderId;
+        };
+
+        var args = misc.clone(aArgs || {});
+        args.folderId = folderId;
+
+        var cookieData = cookies.getAllDatStorageAsObj();
+        var browserIdKey = getKey("browserId", folderId);
+        var sessionIdKey = getKey("sessionId", folderId);
+        cookieData[browserIdKey] = cookieData[browserIdKey] || misc.uuid();
+        cookieData[sessionIdKey] = cookieData[sessionIdKey] || misc.uuid();
+
+        args.browserId = cookieData[browserIdKey];
+        args.sessionId = cookieData[sessionIdKey];
+
+        cookies.writeDatLs(cookieData);
+
+        var locs = adn.lib.getDataLocs(args);
+        var ajax = adn.util.getNewAjax("GET", locs.page);
+        ajax.withCredentials = !misc.isTestAddress(locs.page);
+        ajax.send();
       };
 
       adn.request = function(args) {
