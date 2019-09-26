@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Adnuntius Data: Segments</title>
+</head>
+<body><h3>Adnuntius Data: Segments</h3>
+<p>Example of segment triggers and targeting.</p>
+<hr>
+<script type="text/javascript" src="https://cdn.adnuntius.com/adn.js" async></script>
+
+<!-- Update first name -->
+<!-- There should be two options here, that can be toggled with a button, to change name from Bruce to Richard -->
+<script type="text/javascript">
+function updateProfile(name) {
+    window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
+        adn.visitor('93', {env: 'dev', protocol: 'https', profileValues: {'firstName': name}});
+    });
+}
+</script>
+<button onclick="updateProfile('Richard')">Name = Richard</button>
+<button onclick="updateProfile('Bruce')">Name = Bruce</button>
+
+
+
+<!-- Ad Tag -->
+<!-- This should be trigger by a "get ads" button -->
+<div id="adn-0000000000000077" style="display:none"></div>
+
+<script type="text/javascript">
+function getAds() {
+    window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() { adn.request({ env: 'dev', userId: adn.browserId(), adUnits: [ {auId: '0000000000000077', auW: 1000, auH: 1000 } ]}); });
+}
+</script>
+<button onclick="getAds()">Get Ad</button>
+
+
+</body>
+</html>
