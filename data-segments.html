@@ -29,7 +29,7 @@ function updateProfile(name) {
 
 <script type="text/javascript">
 function getAds() {
-    window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() { adn.request({ env: 'dev', userId: adn.browserId(), adUnits: [ {auId: '0000000000000077', auW: 1000, auH: 1000 } ]}); });
+    window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() { adn.request({ env: 'dev', userId: adn.getBrowserId(), adUnits: [ {auId: '0000000000000077', auW: 1000, auH: 1000 } ]}); });
 }
 </script>
 <button onclick="getAds()">Get Ad</button>
