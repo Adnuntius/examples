@@ -13,7 +13,7 @@
 <script type="text/javascript">
 function updateProfile(field, value) {
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
-        adn.visitor('93', {env: 'dev', protocol: 'https', profileValues: {field: value}});
+        adn.visitor('93', {env: 'dev', protocol: 'https', profileValues: {[field]: value}});
     });
 }
 </script>
