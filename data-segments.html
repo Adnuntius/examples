@@ -11,14 +11,16 @@
 
 <!-- Update first name -->
 <script type="text/javascript">
-function updateProfile(name) {
+function updateProfile(field, value) {
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
-        adn.visitor('93', {env: 'dev', protocol: 'https', profileValues: {'firstName': name}});
+        adn.visitor('93', {env: 'dev', protocol: 'https', profileValues: {field: value}});
     });
 }
 </script>
-<button onclick="updateProfile('Richard')">Name = Richard</button>
-<button onclick="updateProfile('Bruce')">Name = Bruce</button>
+<button onclick="updateProfile('firstName', 'Richard')">Name = Richard</button>
+<button onclick="updateProfile('firstName', 'Bruce')">Name = Bruce</button>
+<button onclick="updateProfile('dateOfBirth', '01/01/1985')">Millenial Generation</button>
+<button onclick="updateProfile('dateOfBirth', '01/01/1950')">Old Bastard</button>
 
 
 
