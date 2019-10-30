@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>1881 Ad example</title>
+<script type="text/javascript">
+    window.idpt = (window.idpt || {});
+    function loadScript(scriptSrc) {
+        var script = document.createElement('script');
+        script.async=true;
+        script.type = 'text/javascript';
+        script.src = scriptSrc;
+        var node = document.getElementsByTagName('script')[0];
+        node.parentNode.insertBefore(script, node);
+        console.log(scriptSrc);
+    }
+    (function() {
+        var useSSL = 'https:' == document.location.protocol;
+        idpt.publisherId = 711;
+        var pubCfgSrc = (useSSL ? 'https:' : 'http:') +
+             '//idpt.360yield.com/pubcfg/711-cfg.js';
+        loadScript(pubCfgSrc);
+        var src = (useSSL ? 'https:' : 'http:') +
+             '//idpt.360yield.com/idpt.js';
+        loadScript(src);
+    })();
+</script>
+<script>
+    idpt.que = (idpt.que || []);
+    idpt.que.push(function() {
+        idpt.createAdSlot("e152cae4-1db4-4a08-aae5-f055f641191f").setPlacementId(708981);
+        idpt.loadAds(["e152cae4-1db4-4a08-aae5-f055f641191f"]);
+    });
+</script>
+</head>
+<body>
+<h1>1881 Ad Example</h1>
+<p>This is the third-party ad code directly loaded into the page, without any Adnuntius processes involved.</p>
+<p>Once the ad is served correctly in all browsers, we can then ensure it works when loaded through Adnuntius.</p>
+<div id="e152cae4-1db4-4a08-aae5-f055f641191f">
+    <script>
+        idpt.que.push(function() {
+            idpt.renderAd("e152cae4-1db4-4a08-aae5-f055f641191f");
+        });
+    </script>
+</div>
+
+</body>
+</html>
