@@ -9,8 +9,7 @@
 <p>This is the third-party ad code directly loaded into the page, without any Adnuntius processes involved.</p>
 <p>Once the ad is served correctly in all browsers, we can then ensure it works when loaded through Adnuntius.</p>
 <p>At the time of writing, an ad loaded in the space below only works every few times rather than every time on Chrome and Firefox, and never on Safari.</p>
-<p>The main problem is the use of <pre>document.write</pre> in the ad code, which is often blocked by browsers. You should ask your ad code provider to give you more advanced code that works in modern browsers.</p>
-
 <script type="text/javascript">document.write('<scr'+'ipt type="text/javascript" src="https://ice.360yield.com/adm?p=22111020&ifa={IFA}&ua={USERAGENT}&bundle={BUNDLE}&lat={LATITUDE}&long={LONGITUDE}&carrier={CARRIER}&search={SEARCH}&conn_speed={CONNECTION}&lmt={LMT}&deviceh={DEVICEH}&devicew={DEVICEW}&density={DENSITY}&tz='+(new Date().getTimezoneOffset())+'"><\/scr'+'ipt>');</script><noscript><a target="_blank" href="https://ice.360yield.com/jump?p=22111020"><img border="0" alt="" src="https://ice.360yield.com/ad?p=22111020"/></a></noscript>
+<p>The ad should be produced above. The main problem is the use of <code>document.write</code> in the ad code, which is often blocked by browsers. You should ask your ad code provider to give you more advanced code that works in modern browsers.</p>
 </body>
 </html>
