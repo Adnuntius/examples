@@ -9,7 +9,6 @@
 <div id="one" style="display:none"></div>
 <div id="two" style="display:none"></div>
 <script src="https://cdn.adnuntius.com/adn.js" async></script>
-<script>window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() { adn.request({ auId: '000000000000497f', targetId: "one", ctx: window.location.href }); });</script>
-<script>window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() { adn.request({adUnits:{ auId: '000000000000497f', targetId: "two"}, context: window.location.href }); });</script>
+<script>window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() { adn.request({ auId: '000000000000497f', targetId: "one", ctx: window.location.href }); });adn.calls.push(function() { adn.request({adUnits:{ auId: '000000000000497f', targetId: "two"}, context: window.location.href }); });</script>
 </body>
 </html>
