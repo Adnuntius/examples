@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+  <title>Synchronous Ad Calls</title>
+</head>
+<body>
+<h3>Synchronous Ad Calls</h3>
+<p>This page shows two methods by which synchronous ad calls can happen.</p>
+<hr>
+<p>First method is just this HTML code directly in the page:</p>
+<code>&lt;script src="http://delivery.adnuntius.com/i?tzo=-660&auId=000000000007eb8e&examples=script&format=script">&lt;/script></code>
+<p>The important part in the script src attribute is <strong>format=script</strong>.</p>
+<script src="https://cdn.adnuntius.com/adn.js"></script>
+<script src="http://delivery.adnuntius.com/i?tzo=-660&auId=000000000007eb8e&format=script&kv=%7B%22examples%22%3A%5B%22script%22%5D%7D&ctx=http%3A%2F%2Flocalhost%3A9090%2F"></script>
+<hr>
+<p>Second method is the following script directly in the page:</p><pre><code>
+&lt;script>
+  adn.request({auId: '000000000007eb8e', kv: {examples: ['script']}, format: 'script'});
+&lt;/script>
+</code></pre>
+<p>Note: for this second method to work, adn.js must have been loaded before this script is executed, which is best assured when adn.js is loaded synchronously.</p>
+<p>Further note: a target element isn't required because the ad content is put it into the page directly where the ad request is made.</p>
+<script>
+  adn.request({auId: '000000000007eb8e', kv: {examples: ['script']}, format: 'script'});
+</script>
+</body>
+</html>
