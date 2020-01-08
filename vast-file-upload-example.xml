@@ -1,0 +1,30 @@
+<VAST version="2.0">
+<Ad id="adn-id-1731860592">
+    <InLine>
+        <AdSystem>Adnuntius</AdSystem>
+        <AdTitle>adn-id-1731860592</AdTitle>
+        <Creatives>
+            <Creative>
+                <Linear>
+                    <Duration>00:00:04</Duration>
+                    <TrackingEvents>
+                        <Tracking event="creativeView"><![CDATA[https://delivery.adnuntius.com/b/_MNI2FsjL2JIXGho1pvH861PKAxtiuN1R43gDTqeT9IAAAAQCtjQz9kbGWD4nuZy3q6HaHGLDtv_qvfGARSGO7_aL9rxpRsFaAWqWsiMlqu9Q35DzlHaDwwGkQG1lTo9eBl3SGbxPA6C2X2IzBKR8_uPZOP6jbjsGICf-LRgb481E2gmXc8bUdr4vH4isL7FVL6S6uvPTUJqDF2IM0aVW0Mtw_fKoR5RDLaLYbM.html]]></Tracking>
+                        <Tracking event="start"><![CDATA[https://delivery.adnuntius.com/s?rt=_MNI2FsjL2JIXGho1pvH861PKAxtiuN1R43gDTqeT9IAAAAQCtjQz9kbGWD4nuZy3q6HaHGLDtv_qvfGARSGO7_aL9rxpRsFaAWqWsiMlqu9Q35DzlHaDwwGkQG1lTo9eBl3SGbxPA6C2X2IzBKR8_uPZOP6jbjsGICf-LRgb481E2gmXc8bUdr4vH4isL7FVL6S6uvPTUJqDF2IM0aVW0Mtw_fKoR5RDLaLYbM]]></Tracking>
+                        <Tracking event="midpoint"><![CDATA[https://delivery.adnuntius.com/v?rt=_MNI2FsjL2JIXGho1pvH861PKAxtiuN1R43gDTqeT9IAAAAQCtjQz9kbGWD4nuZy3q6HaHGLDtv_qvfGARSGO7_aL9rxpRsFaAWqWsiMlqu9Q35DzlHaDwwGkQG1lTo9eBl3SGbxPA6C2X2IzBKR8_uPZOP6jbjsGICf-LRgb481E2gmXc8bUdr4vH4isL7FVL6S6uvPTUJqDF2IM0aVW0Mtw_fKoR5RDLaLYbM]]></Tracking>
+                        
+                    </TrackingEvents>
+                    <VideoClicks>
+                        <ClickThrough><![CDATA[http://adnuntius.com]]></ClickThrough>
+                        <ClickTracking><![CDATA[https://delivery.adnuntius.com/c/_MNI2FsjL2JIXGho1pvH861PKAxtiuN1R43gDTqeT9IAAAAQCtjQz9kbGWD4nuZy3q6HaHGLDtv_qvfGARSGO7_aL9rxpRsFaAWqWsiMlqu9Q35DzlHaDwwGkQG1lTo9eBl3SGbxPA6C2X2IzBKR8_uPZOP6jbjsGICf-LRgb481E2gmXc8bUdr4vH4isL7FVL6S6uvPTUJqDF2IM0aVW0Mtw_fKoR5RDLaLYbM]]></ClickTracking>
+                    </VideoClicks>
+                    <MediaFiles>
+                        <MediaFile delivery="progressive" type="video/mp4" bitrate="43691" width="960" height="540" scalable="true" maintainAspectRatio="true">
+                            <![CDATA[https://assets.adnuntius.com/J5zhEQotnaO0y2NEUGoyaeoAfJMwCA-obblkBlksrm0.mp4]]>
+                        </MediaFile>
+                    </MediaFiles>
+                </Linear>
+            </Creative>
+        </Creatives>
+    </InLine>
+</Ad>
+</VAST>
