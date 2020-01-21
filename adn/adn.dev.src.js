@@ -1,4 +1,5 @@
 /* eslint-env browser */
+/* eslint-disable no-prototype-builtins */
 /* 0000 */
 'use strict';
 
@@ -21,16 +22,21 @@ try {
           dev: {
             id: 'dev',
             as: 'adserver.dev.adnuntius.com',
-            pg: 'dev.data.adnuntius.com'
+            dt: 'dev.data.adnuntius.com'
           },
           staging: {
             id: 'staging',
-            as: 'adserver.staging.adnuntius.com'
+            as: 'adserver.staging.adnuntius.com',
+            dt: 'staging.data.adnuntius.com'
           },
           production: {
             id: 'production',
-            as: 'delivery.adnuntius.com'
+            as: 'delivery.adnuntius.com',
+            dt: 'data.adnuntius.com'
           }
+        },
+        sync: {
+          PLATFORM_161: 'https://ads.creative-serving.com/cm?redir=https%3A%2F%2Fdata.adnuntius.com%2Fsync%3FbrowserId%3D{BROWSER_ID}%26folderId%3D{FOLDER_ID}%26externalSystemType%3DP161%26externalSystemUserId%3D%24%7BUUID%7D'
         },
         methodEnums: {
           ifr: 'ifr',
@@ -40,6 +46,15 @@ try {
         loadEnums: {
           lazy: 'lazy',
           lazyRequest: 'lazyRequest'
+        },
+        requestMode: {
+          hasTarget: 'hasTarget',
+          default: 'default'
+        },
+        requestTiming: {
+          immediate: 'immediate',
+          onReady: 'onReady',
+          onLoad: 'onLoad'
         },
         postMessageType: {
           toParentImpression: 'toParentImpression',
@@ -79,8 +94,7 @@ try {
         },
         cwClass: 'contentWrapperPerItem',
         widgetIdPrefix: 'adn-widget-',
-        adIdPrefix: 'item-id-',
-        adIdPrefixTransitionAway: 'adn-id-',
+        adIdPrefix: 'adn-id-',
         longestTime: 900000,
         defaultProximity: 200,
         defaultVisibilityPercentage: 1,
@@ -93,6 +107,7 @@ try {
         viewabilityStatus: {
           notViewed: 'notViewed',
           divMissing: 'divMissing',
+          blocked: 'blocked',
           viewed: 'viewed',
           viewSent: 'viewSent'
         },
@@ -147,6 +162,7 @@ try {
       STORAGE_DAT_KEY = "adn.data",
       STORAGE_CONSENT_KEY = "adn.consent",
       VALID_CONSENT_VALUES = {PROFILE: 'PROFILE', COUNTS: 'COUNTS', EXTERNAL: 'EXTERNAL', TARGETING: 'TARGETING'},
+      SYNC_BOUNDARY = 6 * 3600 * 1000, // 6 hours in milliseconds
       requestMethods,
       gScriptOverride,
       gFeedback = {console: ENUMS.feedback.console.warnings, inScreen: ENUMS.feedback.inScreen.silent},
@@ -217,7 +233,7 @@ try {
       getFrameElement: function() {
         try {
           return win.frameElement;
-        } catch(e) {
+        } catch (e) {
           adn.out.devOutput("Error looking up frame element");
         }
       },
@@ -307,7 +323,7 @@ try {
             elementPos.left += el.offsetLeft;
             elementPos.top += el.offsetTop;
             el = el.offsetParent;
-          } while(el);
+          } while (el);
         }
         return elementPos;
       },
@@ -410,6 +426,35 @@ try {
           }
         }
       },
+      loadScriptElements: function(scriptContainer, scriptTargetId) {
+        var elementsByTagName = scriptContainer.getElementsByTagName("script");
+        adn.util.forEach(elementsByTagName, function(el) {
+          if (!el) {
+            return;
+          }
+          if (adn.util.isNotBlankString(el.type) && el.type !== "text/javascript") {
+            adn.out.devOutput("Not executing script type", "showAdContent", el.type, el);
+            return;
+          }
+
+          var allAttr = {};
+          adn.util.forEach(el.attributes, function(attr) {
+            if (attr.specified) {
+              allAttr[attr.name] = attr.value;
+            }
+          });
+
+          if (el.src) {
+            var src = el.src;
+            el.parentNode.removeChild(el);
+            misc.loadScriptSrc(src, scriptTargetId, allAttr);
+          } else {
+            var innerHtml = el.innerHTML;
+            el.parentNode.removeChild(el);
+            misc.loadScriptContent(innerHtml, scriptTargetId, allAttr);
+          }
+        });
+      },
       hasProperties: function(obj) {
         if (!adn.util.isObject(obj)) {
           return false;
@@ -430,7 +475,7 @@ try {
             w: width,
             h: height
           };
-        } catch(e) {
+        } catch (e) {
           return adn.out.output("element dimensions failed", "getElementDimensions: catch block", e);
         }
       },
@@ -514,7 +559,7 @@ try {
         return {
           serverUrlBase: serverUrlBase,
           baseRequestLoc: serverUrlBase + (testEnv ? "?" : "/i?") + "tzo=" + new Date().getTimezoneOffset(),
-          isTestEnv: testEnv,
+          isTestEnv: testEnv
         };
       };
 
@@ -570,21 +615,26 @@ try {
           }
           return ENUMS.env.production.id;
         },
-        getDataLocs: function(args) {
-          var locations = setUpLocations(args, 'pg');
+        getAdnDataLocs: function(aArgs) {
+          var args = misc.clone(aArgs || {});
+          args.protocol = 'https';
 
+          var locations = setUpLocations(args, 'dt');
           var urlArgs = {};
-          var qParams = ['browserId', 'folderId', 'sessionId'];
+          var qParams = ['browserId', 'folderId', 'sessionId', 'userId'];
           misc.copyArgValues(urlArgs, args, qParams);
           return {
-            page: locations.baseRequestLoc.replace("/i?", "/page?") + misc.encodeAsUrlParams(urlArgs, true)
+            page: locations.baseRequestLoc.replace("/i?", "/page?") + misc.encodeAsUrlParams(urlArgs, true),
+            visitor: locations.baseRequestLoc.replace("/i?", "/visitor?") + misc.encodeAsUrlParams(urlArgs, true),
+            user: locations.baseRequestLoc.replace("/i?", "/usr?") + misc.encodeAsUrlParams(urlArgs, true),
+            sync: locations.baseRequestLoc.replace("/i?", "/sync?") + misc.encodeAsUrlParams(urlArgs, true)
           };
         },
         getRequestLocs: function(args, checkImmeasurable) {
           var locations = setUpLocations(args);
 
           var urlArgs = {};
-          var qParams = ['usi', 'siteId', 'latitude', 'longitude', 'segments', 'ctx', 'sdk'];
+          var qParams = ['usi', 'siteId', 'latitude', 'longitude', 'segments'];
           misc.copyArgValues(urlArgs, args, qParams);
           if (args.useCookies === false || gUseCookies === false) {
             urlArgs.noCookies = true;
@@ -621,7 +671,7 @@ try {
               var jsonResponse = {};
               try {
                 jsonResponse = JSON.parse(ajax.responseText);
-              } catch(e) {
+              } catch (e) {
                 return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
               }
               if (jsonResponse && jsonResponse.metaData) {
@@ -714,6 +764,7 @@ try {
             if (c) {
               c.errorStatus = ENUMS.errorStatus.noTarget;
             }
+            adn.out.output("Unable to find HTML element", "showAdContent", c, adUnitArgs);
             return adn.out.warn("Unable to find HTML element on page with the following id: " + adUnitArgs.targetId);
           }
           if (c) {
@@ -731,33 +782,8 @@ try {
             }
             targetEl.innerHTML = misc.getAdContentOnly(adContent, adUnitArgs.widgetId);
 
-            var elementsByTagName = targetEl.getElementsByTagName("script");
-            adn.util.forEach(elementsByTagName, function(el) {
-              if (!el) {
-                return;
-              }
-              if (adn.util.isNotBlankString(el.type) && el.type !== "text/javascript") {
-                adn.out.devOutput("Not executing script type", "showAdContent", el.type, el);
-                return;
-              }
+            adn.util.loadScriptElements(targetEl, adUnitArgs.widgetId);
 
-              var allAttr = {};
-              adn.util.forEach(el.attributes, function(attr) {
-                if (attr.specified) {
-                  allAttr[attr.name] = attr.value;
-                }
-              });
-
-              if (el.src) {
-                var src = el.src;
-                el.parentNode.removeChild(el);
-                misc.loadScriptSrc(src, adUnitArgs.widgetId, allAttr);
-              } else {
-                var innerHtml = el.innerHTML;
-                el.parentNode.removeChild(el);
-                misc.loadScriptContent(innerHtml, adUnitArgs.widgetId, allAttr);
-              }
-            });
             dom.showTargetDiv(targetEl, adUnitArgs);
             adn.lib.doDebug(adUnitArgs, doc.getElementById(adUnitArgs.widgetId), targetEl);
             return true;
@@ -815,7 +841,7 @@ try {
     var misc;
     (function() {
       var ALPHABET = '012356789bcdfghjklmnpqrstvwxyz',
-        ID_LENGTH = 16;
+        ID_LENGTH = 24;
 
       misc = {
         uuid: function() {
@@ -845,25 +871,21 @@ try {
             return aObj[aParam];
           }
         },
-        onScriptLoad: function(scriptEl, callback) {
-          // NOTE: Does not handle case of script already loaded.
-          if (!scriptEl || !adn.util.isFunction(callback)) {
-            return adn.out.output("Args not sufficient", "onScriptLoad", scriptEl, callback);
-          }
-          if (scriptEl.readyState) {  //IE
-            scriptEl.onreadystatechange = function() {
-              if (scriptEl.readyState === "loaded" || scriptEl.readyState === "complete") {
-                scriptEl.onreadystatechange = null;
-                return callback();
-              }
-            };
-          } else {  //Others
-            scriptEl.onload = function() {
-              return callback();
-            };
+        onDocReady: function(fn) {
+          if (doc.readyState === "complete" || doc.readyState === "interactive") {
+            fn();
+          } else {
+            adn.util.addEventListener(win, 'DOMContentLoaded', fn);
           }
         },
-        loadScriptSrc: function(src, targetId, attrs, onloadCallback) {
+        onLoad: function(fn) {
+          if (doc.readyState === "complete") {
+            fn();
+          } else {
+            adn.util.addEventListener(win, 'load', fn);
+          }
+        },
+        loadScriptSrc: function(src, targetId, attrs) {
           if (!adn.util.isString(src)) {
             return adn.out.output("src should be a string", "loadScriptSrc", src);
           }
@@ -874,18 +896,23 @@ try {
               scriptEl.setAttribute(attrKey, attrValue);
             });
             scriptEl.src = src;
-            var returnData = adn.util.isFunction(onloadCallback) ? misc.onScriptLoad(scriptEl, onloadCallback) : '';
 
-            if (targetId) {
-              doc.getElementById(targetId).appendChild(scriptEl);
+            var scriptElContainer = targetId ? doc.getElementById(targetId) : null;
+            if (scriptElContainer) {
+              scriptElContainer.appendChild(scriptEl);
             } else {
               var targetEl = doc.getElementsByTagName('script')[0];
               targetEl.parentNode.insertBefore(scriptEl, targetEl);
             }
-            return returnData;
-          } catch(e) {
+          } catch (e) {
             return adn.out.output(e, "loadScriptSrc: in catch block");
           }
+        },
+        addWidgetIdToProcessAd: function(htmlData, newWidgetId) {
+          var jsString = "adn.inIframe.processAdResponse({";
+          var replaceJsString = jsString + " widgetId: '" + newWidgetId + "', ";
+          var replaceJsIframeIdString = "adn.inIframe.getIframeId(\"" + newWidgetId + "\"";
+          return htmlData.replace(jsString, replaceJsString).replace(/adn.inIframe.getIframeId\(/g, replaceJsIframeIdString);
         },
         loadScriptContent: function(content, targetId, attributes) {
           if (!adn.util.isString(content)) {
@@ -903,7 +930,7 @@ try {
             scriptEl.appendChild(scriptContent);
             var targetEl = doc.getElementById(targetId) || doc.body;
             targetEl.appendChild(scriptEl);
-          } catch(e) {
+          } catch (e) {
             return adn.out.output(e, "loadScriptContent: in catch block");
           }
         },
@@ -1104,7 +1131,7 @@ try {
             return url.indexOf('://' + env.as) < 1;
           });
         },
-        getAdContentOnly: function(adContent, newResponseCtrId) {
+        getAdContentOnly: function(adContent, newWidgetId) {
           var adnResponseString = "<div id=\"adn-rsp-";
           var endString = "</body>";
           var adnResponseStringIndex = adContent.indexOf(adnResponseString);
@@ -1114,21 +1141,19 @@ try {
             return;
           }
           var htmlAdContentOnly = adContent.substring(adnResponseStringIndex, endStringIndex);
-          htmlAdContentOnly = "<div id=\"" + newResponseCtrId + "\">" + htmlAdContentOnly + "</div>";
-
-          var jsString = "adn.inIframe.processAdResponse({";
-          var replaceJsString = jsString + " widgetId: '" + newResponseCtrId + "', ";
-          var replaceJsIframeIdString = "adn.inIframe.getIframeId(\"" + newResponseCtrId + "\"";
-          return htmlAdContentOnly.replace(jsString, replaceJsString).replace(/adn.inIframe.getIframeId\(/g, replaceJsIframeIdString);
+          htmlAdContentOnly = "<div id=\"" + newWidgetId + "\">" + htmlAdContentOnly + "</div>";
+          return misc.addWidgetIdToProcessAd(htmlAdContentOnly, newWidgetId);
         },
         gatherDataParams: function(aDataSrc, aFilterCb, aCb, deleteFromObj) {
           var data = [],
+            objParams = {},
             filterCb = adn.util.isFunction(aFilterCb) ? aFilterCb : function() {
               return true;
             },
             cb = adn.util.isFunction(aCb) ? aCb : adn.util.noop,
             deleteMeObj = deleteFromObj || {};
-          var theKeys = ['auId', 'creativeId', 'networkId', 'targetId', 'c', 'kv', 'replacements', 'ps', 'auml', 'userSegments', 'floorPrice'];
+          var theKeys = ['auId', 'creativeId', 'networkId', 'targetId', 'c', 'kv', 'replacements', 'ps', 'auml', 'floorPrice'];
+          var objectKeys = [{server: 'userSegments', script: 'userSegments'}, {server: 'context', script: 'ctx'}];
           adn.util.forEach(aDataSrc, function(a) {
             if (filterCb(a) === true) {
               var params = {};
@@ -1140,13 +1165,23 @@ try {
                 delete params.floorPrice;
               }
               data.push(params);
+              adn.util.forEach(objectKeys, function(key) {
+                objParams[key.server] = objParams[key.server] || a[key.script];
+              });
               cb(a);
             }
           });
           adn.util.forEach(theKeys, function(key) {
             delete deleteMeObj[key];
           });
-          return data;
+          adn.util.forEach(objectKeys, function(oKey) {
+            delete deleteMeObj[oKey.server];
+            delete deleteMeObj[oKey.script];
+          });
+          return {
+            adUnits: data,
+            params: objParams
+          };
         },
         getScriptOverride: function() {
           if (adn.util.isString(gScriptOverride)) {
@@ -1187,6 +1222,9 @@ try {
             // need this here because the kv needs to be an array that is stringified as an array
             paramsObj.kv = JSON.stringify(theArgs.kv);
           }
+          if (theArgs.ctx) {
+            paramsObj.ctx = theArgs.ctx;
+          }
           if (theArgs.replacements) {
             // need this here because the replacements needs to be an array that is stringified as an array
             paramsObj.replacements = JSON.stringify(theArgs.replacements);
@@ -1203,7 +1241,7 @@ try {
           try {
             baseUrl += misc.encodeAsUrlParams(paramsObj, true);
             return baseUrl;
-          } catch(e) {
+          } catch (e) {
             return adn.out.output("encoding urls failed", "insIframe: catch block", e);
           }
         },
@@ -1241,23 +1279,25 @@ try {
           var metaDataObj;
           try {
             metaDataObj = JSON.parse(jsonString);
-          } catch(e) {
+          } catch (e) {
             return adn.out.output("JSON Parse string for adnMeta failed", "regDestination", jsonString);
           }
           cookies.writeAdvLs(metaDataObj);
         }
       },
       ev = {
-        handleChildPageLoad: function(eventData, hasDelayedResize) {
+        handleChildPageLoad: function(eventData, pDelayedResize) {
           var adsDivEl = doc.getElementById(adn.inIframe.getResponseCtrId());
           if (!adsDivEl) {
             return adn.out.devOutput("Can't find container ID", "handleChildPageLoad", adn.inIframe.getResponseCtrId());
           }
           var contentDims = adn.util.getElementDimensions(adsDivEl);
           var resizeToContent = adn.inIframe.isResizeToContent();
-          var messageType = hasDelayedResize ? ENUMS.postMessageType.toParentResize : ENUMS.postMessageType.toParentPageLoad;
+          var delayedResize = adn.util.isNumber(pDelayedResize) ? pDelayedResize : 0;
+          var messageType = delayedResize > 0 ? ENUMS.postMessageType.toParentResize : ENUMS.postMessageType.toParentPageLoad;
 
           var iframe = adsDivEl.getElementsByTagName("iframe")[0];
+          console.log("iframeFromAdsDivEl", iframe, delayedResize);
           if (iframe) {
             // need to do this in order to cover for when the iframe is position: fixed or position: absolute and weird things happen.
             var iframeDims = adn.util.getElementDimensions(iframe);
@@ -1267,6 +1307,8 @@ try {
             if (iframeDims.h > contentDims.h) {
               contentDims.h = iframeDims.h;
             }
+
+            console.log("contentDims", contentDims);
           }
           if ((contentDims.w < 1 || contentDims.h < 1) && !hasDelayedResize) {
             resizeToContent = false;
@@ -1278,16 +1320,22 @@ try {
             h: contentDims.h,
             resizeToContent: resizeToContent
           });
-          if (!hasDelayedResize) {
+          if (delayedResize < 5) {
             win.setTimeout(function() {
-              ev.handleChildPageLoad({}, true);
+              ev.handleChildPageLoad({}, delayedResize + 1);
             }, 750);
           }
         },
         handleChildSubs: function(e, args) {
+          var widgetEl = doc.getElementById(args.widgetId);
+          if (!widgetEl) {
+            return adn.out.output("Cannot find widget", "handleChildSubs", e, args);
+          }
           var msgObject = {
             messageType: ENUMS.postMessageType.toChildPubs,
             windowDims: adn.util.getWindowDims(),
+            widgetDims: adn.util.getElementDimensions(widgetEl),
+            widgetParentDims: adn.util.getElementDimensions(widgetEl.parentElement),
             widgetId: args.widgetId,
             event: args.event,
             isDivContainer: args.isDivContainer
@@ -1295,7 +1343,7 @@ try {
           if (adn.util.isDefined(args.functionCalls)) {
             msgObject.functionCalls = args.functionCalls;
           }
-          misc.postMessageToChild(doc.getElementById(args.widgetId), msgObject);
+          misc.postMessageToChild(widgetEl, msgObject);
         },
         handlePostMessage: function(aMessage) {
           if (!adn.util.isObject(aMessage)) {
@@ -1312,7 +1360,7 @@ try {
           } else {
             try {
               args = JSON.parse(aMessage.data);
-            } catch(e) {
+            } catch (e) {
               return adn.out.devOutput("Couldn't handle parsing", "handlePostMessage", aMessage.data, aMessage);
             }
             if (args[ENUMS.postMessageSrcKey] !== ENUMS.postMessageSrcValue) {
@@ -1329,7 +1377,9 @@ try {
             var msgObject = {
               widgetId: args.widgetId,
               event: args.event,
-              windowDims: args.windowDims
+              windowDims: args.windowDims,
+              widgetDims: args.widgetDims,
+              widgetParentDims: args.widgetParentDims
             };
             if (adn.util.isDefined(args.functionCalls)) {
               msgObject.functionCalls = args.functionCalls;
@@ -1399,6 +1449,7 @@ try {
           } else if (args.messageType === ENUMS.postMessageType.toParentPageLoad || args.messageType === ENUMS.postMessageType.toParentResize) {
             if (widgetSpec.resizeOnPageLoad !== false && (!adn.util.isFunction(widgetSpec.resizeOnPageLoad) || widgetSpec.resizeOnPageLoad(args) !== false)) {
               if (adn.util.isTrue(args.resizeToContent)) {
+                console.log("pageLoad");
                 parentMethods.iframeResizer({widgetId: widgetSpec.widgetId, w: args.w, h: args.h}, false);
               }
             }
@@ -1424,7 +1475,7 @@ try {
               } else {
                 parentMethods[args.method].call(parentMethods, args);
               }
-            } catch(e) {
+            } catch (e) {
               return adn.out.output(e, "catch block for calling method", args, e);
             }
 
@@ -1488,7 +1539,7 @@ try {
           if (adn.util.isString(storageString) && storageString.length > 0) {
             try {
               return JSON.parse(storageString);
-            } catch(e) {
+            } catch (e) {
               return adn.out.output("Error reading from local storage", "cookie.getLs", e, storageType, storageString);
             }
           }
@@ -1582,7 +1633,7 @@ try {
             var ca = decodedCookie.split(';');
             for (var i = 0; i < ca.length; i++) {
               var c = ca[i];
-              while(c.charAt(0) === ' ') {
+              while (c.charAt(0) === ' ') {
                 c = c.substring(1);
               }
               if (!name) {
@@ -1622,10 +1673,14 @@ try {
                 adn.out.devOutput("Invalid consent item", "writeConsent", consentArray);
               }
             });
-            if (writeConsentArray.length < 1) {
-              win.localStorage.removeItem(STORAGE_CONSENT_KEY);
-            } else {
-              win.localStorage.setItem(STORAGE_CONSENT_KEY, JSON.stringify(writeConsentArray));
+            try {
+              if (writeConsentArray.length < 1) {
+                win.localStorage.removeItem(STORAGE_CONSENT_KEY);
+              } else {
+                win.localStorage.setItem(STORAGE_CONSENT_KEY, JSON.stringify(writeConsentArray));
+              }
+            } catch (e) {
+              adn.out.output("Problem setting item", "writeConsent", e, writeConsentArray);
             }
           },
           getConsent: function() {
@@ -1664,8 +1719,12 @@ try {
               sessionObj[key] = value;
             });
 
-            win.sessionStorage.setItem(STORAGE_ADV_METADATA_KEY, JSON.stringify(sessionObj));
-            win.localStorage.setItem(STORAGE_ADV_METADATA_KEY, JSON.stringify(lsArray));
+            try {
+              win.sessionStorage.setItem(STORAGE_ADV_METADATA_KEY, JSON.stringify(sessionObj));
+              win.localStorage.setItem(STORAGE_ADV_METADATA_KEY, JSON.stringify(lsArray));
+            } catch (e) {
+              adn.out.output("Problem setting item", "writeAdvLs", e, sessionObj, lsArray);
+            }
           },
           writeDatLs: function(cookieObj) {
             if (!adn.util.isObject(cookieObj) || !adn.util.hasProperties(cookieObj)) {
@@ -1682,11 +1741,17 @@ try {
                 sessionParams[key] = value;
               } else if (key.indexOf("browserId") === 0) {
                 lsParams[key] = value;
+              } else if (key.indexOf("extSync") === 0) {
+                lsParams[key] = value;
               }
             });
 
-            win.sessionStorage.setItem(STORAGE_DAT_KEY, JSON.stringify(sessionParams));
-            win.localStorage.setItem(STORAGE_DAT_KEY, JSON.stringify(lsParams));
+            try {
+              win.sessionStorage.setItem(STORAGE_DAT_KEY, JSON.stringify(sessionParams));
+              win.localStorage.setItem(STORAGE_DAT_KEY, JSON.stringify(lsParams));
+            } catch (e) {
+              adn.out.output("Problem setting item", "writeDatLs", e, sessionParams, lsParams);
+            }
           },
           getAllDatStorageAsObj: function() {
             if (!gUseLocalStorage) {
@@ -1723,6 +1788,9 @@ try {
 
             if (au.matchedAdCount > 0 && au.html.indexOf("adnOptionContainerDiv") > 0) {
               wSpecArgs.container = ENUMS.container.div;
+            }
+            if (au.matchedAdCount > 0 && au.html.indexOf("adnOptionContainerIframe") > 0) {
+              wSpecArgs.container = ENUMS.container.iframe;
             }
 
             if (au.matchedAdCount === 0) {
@@ -1784,9 +1852,9 @@ try {
             targetEl.style.display = 'block';
           }
         },
-        insIframe: function(args, targetElement, onBeforeInsertion) {
+        insIframe: function(args, targetElement) {
           var targetEl = (targetElement && targetElement.targetId === args.targetId) || misc.getDocEl(args);
-          if (!targetEl) {
+          if (!targetEl && args.format !== 'script') {
             adn.out.warn("Unable to find HTML element on page with the following id or class: " + args.targetId + " - " + args.targetClass);
             return adn.out.output("No targetId was found.", "insIframe");
           }
@@ -1826,12 +1894,6 @@ try {
             ifr.src = serverSrc;
           }
 
-          ifr.width = adn.util.isString(args.auW) || args.auW > 0 ? args.auW : 0;
-          targetEl.style.width = adn.util.isNumber(args.auW) && args.auW > 0 ? adn.util.dimension(ifr.width) : ifr.width;
-
-          ifr.height = adn.util.isString(args.auH) || args.auH > 0 ? args.auH : 0;
-          targetEl.style.height = adn.util.isNumber(args.auH) && args.auH > 0 ? adn.util.dimension(ifr.height) : ifr.height;
-
           ifr.setAttribute('style', 'display: block; margin: 0; borderWidth: 0; padding: 0;');
           ifr.setAttribute('scrolling', 'no');
           ifr.frameBorder = '0';
@@ -1840,11 +1902,19 @@ try {
             ifr.setAttribute("sandbox", "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation");
           }
 
-          if (onBeforeInsertion) {
-            onBeforeInsertion(ifr);
-          }
+          if (args.format === 'script') {
+            var scriptSrc = ifr.src;
+            scriptSrc += misc.encodeAsUrlParams({format: 'script'}, true);
+            doc.write("\x3Cscript src='" + scriptSrc + "'>\x3C/script>");
+          } else {
+            ifr.width = adn.util.isString(args.auW) || args.auW > 0 ? args.auW : 0;
+            targetEl.style.width = adn.util.isNumber(args.auW) && args.auW > 0 ? adn.util.dimension(ifr.width) : ifr.width;
 
-          targetEl.appendChild(ifr);
+            ifr.height = adn.util.isString(args.auH) || args.auH > 0 ? args.auH : 0;
+            targetEl.style.height = adn.util.isNumber(args.auH) && args.auH > 0 ? adn.util.dimension(ifr.height) : ifr.height;
+
+            targetEl.appendChild(ifr);
+          }
 
           dom.showTargetDiv(targetEl, args);
           return ifr;
@@ -1871,7 +1941,7 @@ try {
                   var jsonResponse = {};
                   try {
                     jsonResponse = JSON.parse(ajax.responseText);
-                  } catch(e) {
+                  } catch (e) {
                     return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
                   }
                   if (jsonResponse && jsonResponse.metaData) {
@@ -1893,7 +1963,7 @@ try {
               }
             }
             return true;
-          } catch(e) {
+          } catch (e) {
             adn.out.output("sending a " + feedbackText + " event failed", e);
             return false;
           }
@@ -1901,12 +1971,14 @@ try {
 
         var sendImpression = function(impRequestProp, specProp, constantCheckProp, constantPostProp, feedbackText, callbackProp) {
           adn.util.forEach(gAdSpecs, function(spec) {
-            if (!adn.util.isString(spec.rt)) {
-              return adn.out.output("Need a response token on the spec object to send imp", "send" + feedbackText + "Impression", spec);
+            if (!adn.util.isString(spec.rt) && spec.displayStatus) {
+              adn.out.output("Need a response token on the spec object to send imp", "send" + feedbackText + "Impression", spec);
+              return;
             }
             var impRequestLoc = gAdLocs[impRequestProp];
             if (!adn.util.isString(impRequestLoc)) {
-              return adn.out.output("Missing a imp request location", "send" + feedbackText + "Impression", gAdLocs, impRequestProp);
+              adn.out.output("Missing a imp request location", "send" + feedbackText + "Impression", gAdLocs, impRequestProp);
+              return;
             }
             if (spec.displayStatus === ENUMS.displayStatus.displayed && spec[specProp] === ENUMS[specProp][constantCheckProp]) {
               if (misc.isSrcdocFrame()) {
@@ -1991,12 +2063,12 @@ try {
 
             try {
               windowSize = adn.util.getWindowSize();
-            } catch(e) {
+            } catch (e) {
               adn.out.output("takeProximityReading window size calcs off", e);
             }
             try {
               scrollPos = adn.util.getScrollPos();
-            } catch(e) {
+            } catch (e) {
               adn.out.output("takeProximityReading scroll calcs off", e);
             }
 
@@ -2057,7 +2129,7 @@ try {
                   }
                 }
                 widgetEl.style.display = previousDisplay;
-              } catch(e) {
+              } catch (e) {
                 adn.out.output("some catch error for takeProximityReading", e);
               }
             });
@@ -2099,7 +2171,7 @@ try {
                 gWindowStats.prevWindowWidth = windowSize.width;
                 gWindowStats.prevWindowHeight = windowSize.height;
               }
-            } catch(e) {
+            } catch (e) {
               adn.out.output("takeViewabilityReading window size calcs off", e);
             }
             var scrollPos;
@@ -2111,7 +2183,7 @@ try {
               }
               gWindowStats.maxViewLeft = Math.max(scrollPos.left + windowSize.width, gWindowStats.maxViewLeft);
               gWindowStats.maxViewTop = Math.max(scrollPos.top + windowSize.height, gWindowStats.maxViewTop);
-            } catch(e) {
+            } catch (e) {
               adn.out.output("takeViewabilityReading scroll calcs off", e);
             }
             var now = new Date().getTime();
@@ -2206,7 +2278,7 @@ try {
                     isDivContainer: spec.container === ENUMS.container.div || spec.isDivContainer
                   });
                 }
-              } catch(e) {
+              } catch (e) {
                 adn.out.output("takeViewabilityReading off", e);
               }
             });
@@ -2310,6 +2382,8 @@ try {
               targetEl.style.width = adn.util.dimension(args.w);
               targetEl.style.height = adn.util.dimension(args.h);
 
+              console.log("iframeResizer", widget, targetEl);
+
               if ((zeroW || zeroH) && displayNone) {
                 widget.style.display = 'none';
                 targetEl.style.display = 'none';
@@ -2320,6 +2394,7 @@ try {
             var adCount = parseInt(args.retAdCount, 10);
             var widgetSpec = gWidgetSpecs[args.widgetId];
             if (adCount === 0) {
+              console.log("styleFromAds000");
               parentMethods.iframeResizer({widgetId: args.widgetId, w: 0, h: 0}, gFeedback.inScreen !== ENUMS.feedback.inScreen.inAdUnit);
             } else if (adn.util.isNumber(adCount) && adCount > 0) {
               if (!widgetSpec || !adn.util.hasProperties(widgetSpec)) {
@@ -2327,6 +2402,7 @@ try {
               }
               widgetSpec.displayStatus = ENUMS.displayStatus.displayed;
               readings.initViewability();
+              console.log("styleFromAds");
               parentMethods.iframeResizer({
                 widgetId: args.widgetId,
                 w: parseInt(args.retAdsW, 10),
@@ -2388,6 +2464,12 @@ try {
             var funcArgs = {};
             if (adn.util.isObject(args.windowDims)) {
               funcArgs.windowDims = args.windowDims;
+            }
+            if (adn.util.isObject(args.widgetDims)) {
+              funcArgs.widgetDims = args.widgetDims;
+            }
+            if (adn.util.isObject(args.widgetParentDims)) {
+              funcArgs.widgetParentDims = args.widgetParentDims;
             }
             eventFunc.cb(funcArgs);
           });
@@ -2451,9 +2533,9 @@ try {
           }
           contentDims = adn.util.getElementDimensions(adsDivEl);
           ads = adn.util.filter(adsDivEl.getElementsByTagName("div"), function(el) {
-            return el.className.indexOf(ENUMS.cwClass) > -1 && (el.id.indexOf(ENUMS.adIdPrefix) === 0 || el.id.indexOf(ENUMS.adIdPrefixTransitionAway) === 0);
+            return el.className.indexOf(ENUMS.cwClass) > -1 && (el.id.indexOf(ENUMS.adIdPrefix) === 0);
           });
-        } catch(e) {
+        } catch (e) {
           contentDims = {};
         }
 
@@ -2461,8 +2543,9 @@ try {
 
         // isNested lets you know if the Adnuntius ad is a third-party creative in another ad server
         var isDivContainer = adsDivEl && adsDivEl.tagName.toLowerCase() === 'div' && (containerId !== adn.inIframe.getResponseCtrId() || containerId.indexOf(ENUMS.widgetIdPrefix) === 0);
-        var isNested = !isDivContainer && (!iframeId || !adn.lib.isParentTopWindow());
+        var isNested = (!isDivContainer && (!iframeId || !adn.lib.isParentTopWindow()) || (isDivContainer && (!iframeId || !adn.util.isTopWindow())));
         adn.util.forEach(ads, function(a) {
+          var ogData = gAdSpecs[a.id] || {};
           gAdSpecs[a.id] = {
             widgetId: iframeId,
             isNested: isNested,
@@ -2472,7 +2555,7 @@ try {
             rt: a.getAttribute(RT_DATA_ATTR),
             adStatus: ENUMS.adStatus.processed,
             displayStatus: ENUMS.displayStatus.displayed,
-            viewabilityStatus: ENUMS.viewabilityStatus.notViewed,
+            viewabilityStatus: ogData.viewabilityStatus || ENUMS.viewabilityStatus.notViewed,
             visibilityStatus: ENUMS.visibilityStatus.notVisible,
             viewability: {
               maxPercent: 0,
@@ -2487,6 +2570,7 @@ try {
           };
 
           if (isNested && misc.supportsIntersectionObserver()) {
+            // this section is for the ad being served inside another ad server's iframe
             var adId = a.id;
             var observer = false;
             var callback = function(data) {
@@ -2563,7 +2647,7 @@ try {
           }
           adn.util.addEventListener(cwElPerItemEl, 'click', function(e) {
             var linkNode = e.target;
-            while(linkNode && linkNode.nodeName.toLowerCase() !== 'a') {
+            while (linkNode && linkNode.nodeName.toLowerCase() !== 'a') {
               linkNode = linkNode.parentNode;
             }
             if (linkNode && !misc.getEnvFromHref(linkNode.href)) {
@@ -2626,7 +2710,7 @@ try {
                 ajax.withCredentials = !misc.isTestAddress(loc);
                 ajax.send();
               }
-            } catch(e) {
+            } catch (e) {
               adn.out.output("sending a custom event failed", e, gAdSpecs, args, customArgs);
             }
           };
@@ -2669,6 +2753,13 @@ try {
             }
           });
           return selEl ? selEl.id : "responseCtr";
+        },
+        blockViewability: function(adId) {
+          if (!adn.util.isNotBlankString(adId)) {
+            return adn.out.output("Need to supply the ad id to block viewability", "blockViewability", adId);
+          }
+          gAdSpecs[adId] = gAdSpecs[adId] || {};
+          gAdSpecs[adId].viewabilityStatus = ENUMS.viewabilityStatus.blocked;
         },
         blockResizeToContent: function() {
           resizeToContent = false;
@@ -2791,20 +2882,21 @@ try {
           var pArgs = adn.util.isObject(argsParent) ? misc.clone(argsParent) : {};
           var randomNum = Math.random();
           var data = {
-            auId: argsAu.auId || argsAu.targetId,
+            auId: argsAu.auId || argsAu.targetId || argsAu.widgetId,
             requestArgs: requestArgs,
             parentArgs: argsParent,
             auArgs: argsAu,
+            format: argsAu.format === 'script' ? 'script' : undefined,
             creativeId: argsAu.creativeId,
             creativeData: argsAu.creativeData,
+            requestMode: ENUMS.requestMode[pArgs.requestMode || argsAu.requestMode] || ENUMS.requestMode.DEFAULT,
             networkId: argsAu.networkId || pArgs.networkId,
-            widgetId: ENUMS.widgetIdPrefix + randomNum,
+            widgetId: argsAu.widgetId || ENUMS.widgetIdPrefix + randomNum,
             auW: argsAu.auW || argsAu.creativeWidth || 0,
             auH: argsAu.auH || argsAu.creativeHeight || 0,
             display: argsAu.display || undefined,
             c: argsAu.c || pArgs.c || undefined,
-            sdk: argsAu.sdk || pArgs.sdk || undefined,
-            ctx: argsAu.ctx || pArgs.ctx || undefined,
+            ctx: argsAu.ctx || pArgs.ctx || win.location.href,
             kv: argsAu.kv || pArgs.kv || undefined,
             auml: argsAu.auml || undefined,
             replacements: argsAu.replacements || pArgs.replacements,
@@ -2902,13 +2994,6 @@ try {
         }
       };
 
-      var singleIframe = function(onBeforeInsertion) {
-        var mAs = mAdUnits[0];
-        if (!mAs || !mAs.auId) {
-          return adn.out.output("No auId was found.", "singleIframe");
-        }
-        dom.insIframe(mAs, {}, onBeforeInsertion);
-      };
       var getWidgetEl = function() {
         var mAs = mAdUnits[0];
         var targetEl = misc.getDocEl(mAs);
@@ -2923,7 +3008,18 @@ try {
 
         return {
           ifr: function() {
-            return singleIframe();
+            var mAs = mAdUnits[0];
+            if (!mAs || !mAs.auId) {
+              return adn.out.output("No auId was found.", "ifr");
+            }
+            if (mAs.requestMode === ENUMS.requestMode.hasTarget && !misc.getDocEl(mAs)) {
+              adn.out.devOutput("Skipping ad request", "ifr", mAs);
+              if (adn.util.isFunction(mAs.onNoMatchedAds)) {
+                mAs.onNoMatchedAds(mAs.requestArgs);
+              }
+              return false;
+            }
+            dom.insIframe(mAs);
           },
           preview: function() {
             if (mCreatives.length < 1) {
@@ -2955,7 +3051,7 @@ try {
                   var adContent;
                   try {
                     adContent = ajax.responseText;
-                  } catch(e) {
+                  } catch (e) {
                     return adn.out.output(e, "ajax.onreadystatechange: catch block", creative.onError);
                   }
 
@@ -3000,13 +3096,14 @@ try {
               unsentAdUnits = [],
               requestId = misc.getParam(aAdUnitRequestData, 'requestId');
 
-            var adUnitsToSend = misc.gatherDataParams(adUnitsCheckUnsent, function(au) {
+            var gatheredDataParams = misc.gatherDataParams(adUnitsCheckUnsent, function(au) {
               var theWidget = gWidgetSpecs[au.widgetId];
               var sendRequestForThisAdUnit = (misc.getParam(theWidget.requestParams, 'load') !== ENUMS.loadEnums.lazyRequest || theWidget.withinBounds);
               if (!sendRequestForThisAdUnit) {
                 unsentAdUnits.push(au);
               }
-              if (sendRequestForThisAdUnit && au.auId === 'dummyadunit-ignore') {
+              if (sendRequestForThisAdUnit && au.requestMode === ENUMS.requestMode.hasTarget && !misc.getDocEl(au)) {
+                adn.out.devOutput("Skipping ad request", "composed", au);
                 if (adn.util.isFunction(au.onNoMatchedAds)) {
                   au.onNoMatchedAds(au.requestArgs);
                 }
@@ -3016,6 +3113,9 @@ try {
             }, function(adUnit) {
               gWidgetSpecs[adUnit.widgetId].composed = true;
             });
+
+            var adUnitsToSend = gatheredDataParams.adUnits;
+            var requestData = gatheredDataParams.params;
 
             if (adUnitsToSend.length > 0) {
               impRequestLoc += misc.encodeAsUrlParams(cookies.getIdsAsObj(wAdUnits[0]), true);
@@ -3035,7 +3135,7 @@ try {
                   var ads;
                   try {
                     ads = JSON.parse(ajax.responseText);
-                  } catch(e) {
+                  } catch (e) {
                     return adn.out.output(e, "ajax.onreadystatechange: catch block", wAdUnits[0].onError);
                   }
                   if (!ads.adUnits) {
@@ -3060,11 +3160,7 @@ try {
               ajax.withCredentials = !misc.isTestAddress(impRequestLoc);
               var adUnitsRequestObject = misc.gatherExclusions(wAdUnits);
 
-              var filteredAdUnitsData = misc.clone(adUnitsToSend);
-              adn.util.forEach(filteredAdUnitsData, function(a) {
-                delete a.userSegments;
-              });
-              adUnitsRequestObject.adUnits = filteredAdUnitsData;
+              adUnitsRequestObject.adUnits = adUnitsToSend;
 
               misc.setAndReturnMetaData(adUnitsRequestObject);
 
@@ -3079,9 +3175,7 @@ try {
               if (consent.length > 0) {
                 adUnitsRequestObject.consent = consent;
               }
-              if (adUnitsToSend[0].userSegments) {
-                adUnitsRequestObject.userSegments = adUnitsToSend[0].userSegments;
-              }
+              adUnitsRequestObject = misc.combineArgs(adUnitsRequestObject, requestData);
               ajax.send(JSON.stringify(adUnitsRequestObject));
               gComposedRequest = ENUMS.composedRequest.requestMade;
             }
@@ -3239,7 +3333,7 @@ try {
           if (contentData) {
             try {
               response = JSON.parse(contentData);
-            } catch(e) {
+            } catch (e) {
               adn.out.output("JSON parsing ajax content call failed", "contentWidget", e, args);
             }
           }
@@ -3354,10 +3448,10 @@ try {
           adUnits = [],
           userIdObj = {};
         if (reqArgs.auId && !adn.util.isArray(reqArgs.adUnits)) {
-          adUnits = misc.gatherDataParams([reqArgs], null, null, args);
+          adUnits = misc.gatherDataParams([reqArgs], null, null, args).adUnits;
           userIdObj = reqArgs;
         } else {
-          adUnits = misc.gatherDataParams(reqArgs.adUnits);
+          adUnits = misc.gatherDataParams(reqArgs.adUnits).adUnits;
           userIdObj = adUnits[0];
         }
         serverUrl = misc.encodeUrlParams(impRequestLoc, queryParams, args);
@@ -3390,7 +3484,7 @@ try {
                 cookies.writeAdvLs(jsonData.metaData);
               }
               return jsonData;
-            } catch(e) {
+            } catch (e) {
               makeResponse({error: e, errorText: "Error with parsing the response text"});
               return adn.out.output("Parsing response text fail", "ajax.onreadystatechange: catch block", e);
             }
@@ -3434,7 +3528,7 @@ try {
             var ajaxResponse;
             try {
               ajaxResponse = JSON.parse(ajax.responseText);
-            } catch(e) {
+            } catch (e) {
               return adn.out.output(e, "ajax.onreadystatechange: catch block", ajax);
             }
             if (ajaxResponse.metaData) {
@@ -3460,60 +3554,60 @@ try {
         gRequestInfo = {};
       };
 
-      adn.chbRequest = function(adUnits, adnRequest, config) {
-        if (!adn.util.isArray(adnRequest.adUnits)) {
-          adn.out.output("Need to supply an array of Adnuntius ad units", "headerBid", adnRequest);
-        }
-        var adCodes = [];
-        adn.util.forEach(adUnits, function(au) {
-          if (adn.util.isString(au.code)) {
-            adCodes.push(au.code);
+      var chbMethods = (function() {
+        var chbRequestCounts = 0;
+
+        var PREBID_TIMEOUT = 2000;
+        var PBJS_LOAD_FAILSAFE_TIMEOUT = 4000;
+
+        var isValidChbSizes = function(sizes) {
+          if (!adn.util.isArray(sizes)) {
+            return false;
           }
-        });
-        if (adCodes.length < 1) {
-          adn.out.output("Missing required ad codes", "headerBid", adUnits);
-        }
-
-        var PREBID_TIMEOUT = 1000;
-        var FAILSAFE_TIMEOUT = 3000;
-
-        var pbjs = win.pbjs || {};
-        pbjs.que = pbjs.que || [];
-
-        pbjs.que.push(function() {
-          if (config) {
-            pbjs.setConfig(config);
-          }
-
-          pbjs.addAdUnits(adUnits);
-
-          pbjs.requestBids({
-            bidsBackHandler: initAdserver,
-            timeout: PREBID_TIMEOUT
+          var returnValue = true;
+          adn.util.forEach(sizes, function(size) {
+            if (!adn.util.isArray(size) || size.length !== 2 || !adn.util.isInteger(size[0]) || !adn.util.isInteger(size[1])) {
+              returnValue = false;
+            }
           });
-        });
+          return returnValue;
+        };
 
-        function initAdserver() {
-          if (pbjs.initAdserverSet) return;
-          pbjs.initAdserverSet = true;
+        function initAdserver(locPbjs, adnRequest, config, prebidLoadTimeout) {
+          chbRequestCounts--;
+          if (chbRequestCounts < 0) {
+            return;
+          }
+          locPbjs.initAdserverSet = true;
 
           adn.calls.push(function() {
-            pbjs.que.push(function() {
-              var setGptAsync = adn.util.isTrue(misc.getParam(config, 'gptAsync'));
+
+            var makePrebidHappen = function() {
+              var setGptAsync = !prebidLoadTimeout && adn.util.isTrue(misc.getParam(config, 'gptAsync'));
               if (setGptAsync) {
-                pbjs.setTargetingForGPTAsync && pbjs.setTargetingForGPTAsync();
+                locPbjs.setTargetingForGPTAsync && locPbjs.setTargetingForGPTAsync();
               }
-              var resps = pbjs.getBidResponses();
-              var noBidReqs = pbjs.getNoBids();
+              var resps = adn.util.isFunction(locPbjs.getBidResponses) ? locPbjs.getBidResponses() : [];
+              var noBidReqs = adn.util.isFunction(locPbjs.getNoBids) ? locPbjs.getNoBids() : [];
               var isDebugMode = adn.util.isTrue(misc.getParam(config, 'debug'));
               if (isDebugMode) {
+                if (prebidLoadTimeout) {
+                  adn.out.output("Prebid.js load timed-out", "headerBidRequest");
+                }
                 adn.out.output("Raw bid responses in prebid", "headerBidRequest", resps);
-                adn.out.output("The no bid requests in prebid", "headerBidRequest", noBidReqs);
+                adn.out.output("The prebid requests with no bids", "headerBidRequest", noBidReqs);
               }
               adnRequest.headerBids = [];
               adn.util.forEach(resps, function(resp) {
                 adn.util.forEach(resp.bids, function(bid) {
-                  adnRequest.headerBids.push(bid);
+                  var bidClone = misc.clone(bid);
+
+                  // delete null dealId value
+                  if (!bidClone.dealId) {
+                    delete bidClone.dealId;
+                  }
+
+                  adnRequest.headerBids.push(bidClone);
                 });
               });
 
@@ -3521,9 +3615,25 @@ try {
                 adn.util.forEach(nbReq.bids, function(bid) {
                   var bidClone = misc.clone(bid);
                   bidClone.cpm = 0;
-                  bidClone.bidderCode = bid.bidderCode || bid.bidder;
                   bidClone.statusMessage = "Bid returned empty or error response";
-                  bidClone.sizes = bid.sizes;
+
+                  var bidderCode = bid.bidderCode || bid.bidder;
+                  bidClone.bidderCode = adn.util.isNotBlankString(bidderCode) ? bidderCode : "";
+                  if (!adn.util.isNotBlankString(bidderCode)) {
+                    adn.out.output("Invalid bidder code has been set. Needs to be a String.", "headerBidRequest", bid.bidderCode || bid.bidder, bid);
+                  }
+
+                  var isValid = isValidChbSizes(bid.sizes);
+                  if (!isValid) {
+                    adn.out.output("Invalid sizes have been configured. Should be an two-dimension array of integers within an array", "headerBidRequest", bid.sizes, bid);
+                  }
+                  bidClone.sizes = isValid ? bid.sizes : [];
+
+                  // delete null dealId value
+                  if (!bidClone.dealId) {
+                    delete bidClone.dealId;
+                  }
+
                   adnRequest.headerBids.push(bidClone);
                 });
               });
@@ -3533,50 +3643,187 @@ try {
               }
 
               adn.request(adnRequest);
-            });
+            };
+
+            if (prebidLoadTimeout) {
+              makePrebidHappen();
+            } else {
+              locPbjs.que.push(makePrebidHappen);
+            }
           });
         }
 
-        // in case PBJS doesn't load
-        win.setTimeout(function() {
-          initAdserver();
-        }, FAILSAFE_TIMEOUT);
+        return function(adUnits, adnRequest, config) {
+          if (!adn.util.isArray(adnRequest.adUnits)) {
+            adn.out.output("Need to supply an array of Adnuntius ad units", "headerBid", adnRequest);
+          }
+
+          var pbjs = win.pbjs || {};
+          pbjs.que = pbjs.que || [];
+
+          pbjs.que.push(function() {
+            // empty parameters clears all existing ad units before call
+            pbjs.removeAdUnit();
+
+            if (config) {
+              pbjs.setConfig(config);
+            }
+
+            pbjs.addAdUnits(adUnits);
+
+            pbjs.requestBids({
+              bidsBackHandler: function() {
+                initAdserver(pbjs, adnRequest, config);
+              },
+              timeout: PREBID_TIMEOUT
+            });
+          });
+
+          chbRequestCounts++;
+
+          // in case PBJS doesn't load
+          win.setTimeout(function() {
+            initAdserver(pbjs, adnRequest, config, true);
+          }, PBJS_LOAD_FAILSAFE_TIMEOUT);
+        };
+      })();
+
+      var getCookieDatData = function() {
+        var cookieData = cookies.getAllDatStorageAsObj();
+        cookieData.browserId = adn.util.isNotBlankString(cookieData.browserId) ? cookieData.browserId : misc.uuid();
+        cookieData.sessionId = adn.util.isNotBlankString(cookieData.sessionId) ? cookieData.sessionId : misc.uuid();
+        cookieData.extSync = adn.util.isObject(cookieData.extSync) ? cookieData.extSync : {};
+        cookies.writeDatLs(cookieData);
+        return cookieData;
       };
 
-      adn.view = function(folderId, aArgs) {
-        var getKey = function(prefix, folderId) {
-          return prefix + "|" + folderId;
-        };
-
+      var adnDataRequest = function(folderId, aArgs, config, cb) {
+        if (!adn.util.isNotBlankString(folderId)) {
+          return adn.out.output("Need a folder Id", 'adnDataRequest', folderId, aArgs, config);
+        }
         var args = misc.clone(aArgs || {});
         args.folderId = folderId;
 
-        var cookieData = cookies.getAllDatStorageAsObj();
-        var browserIdKey = getKey("browserId", folderId);
-        var sessionIdKey = getKey("sessionId", folderId);
-        cookieData[browserIdKey] = cookieData[browserIdKey] || misc.uuid();
-        cookieData[sessionIdKey] = cookieData[sessionIdKey] || misc.uuid();
+        var cookieData = getCookieDatData();
+        args.browserId = cookieData.browserId;
+        args.sessionId = cookieData.sessionId;
 
-        args.browserId = cookieData[browserIdKey];
-        args.sessionId = cookieData[sessionIdKey];
+        var locs = adn.lib.getAdnDataLocs(args);
+        var ajax = adn.util.getNewAjax(config.method, locs[config.locKey], adn.util.isFunction(cb) ? function() {
+          cb(ajax);
+        } : null);
+        ajax.withCredentials = !misc.isTestAddress(locs[config.locKey]);
 
-        cookies.writeDatLs(cookieData);
+        var postedData = config.pick.length ? JSON.stringify(misc.copyArgValues({}, args, config.pick)) : undefined;
+        ajax.send(postedData);
+      };
 
-        var locs = adn.lib.getDataLocs(args);
-        var ajax = adn.util.getNewAjax("GET", locs.page);
-        ajax.withCredentials = !misc.isTestAddress(locs.page);
-        ajax.send();
+      adn.getSegments = function(folderId, aArgs) {
+        adnDataRequest(folderId, aArgs, {
+          method: "GET",
+          pick: ["browserId", "folderId"],
+          locKey: 'user'
+        }, function(ajax) {
+          if (ajax.readyState && ajax.readyState !== 4) {
+            return false;
+          }
+          if ((!ajax.status || ajax.status === 200) && adn.util.isNotBlankString(ajax.responseText)) {
+            var jsonResponse = {};
+            try {
+              jsonResponse = JSON.parse(ajax.responseText);
+            } catch (e) {
+              return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
+            }
+            if (adn.util.isFunction(aArgs.onResponse)) {
+              aArgs.onResponse(jsonResponse);
+            }
+          }
+        });
+      };
+
+      adn.getBrowserId = function() {
+        return getCookieDatData().browserId;
+      };
+
+      adn.visitor = function(folderId, aArgs) {
+        adnDataRequest(folderId, aArgs, {
+          method: "POST",
+          pick: ["profileValues", "browserId", "sessionId", "folderId"],
+          locKey: 'visitor'
+        });
+      };
+
+      adn.view = function(folderId, aArgs) {
+        adnDataRequest(folderId, aArgs, {
+          method: "GET",
+          pick: [],
+          locKey: 'page'
+        });
+      };
+
+      adn.externalUserSync = function(folderId, extId) {
+        if (!adn.util.isNotBlankString(folderId) || !ENUMS.sync[extId]) {
+          return adn.out.output("Need a valid folder ID and external system ID to proceed", "externalUserSync", folderId, extId);
+        }
+        var cookieData = getCookieDatData();
+        var extSyncUrl = ENUMS.sync[extId].replace("{BROWSER_ID}", encodeURIComponent(cookieData.browserId)).replace("{FOLDER_ID}", encodeURIComponent(folderId));
+
+        var lastSync = cookieData.extSync[extId];
+        var nowInMillis = new Date().getTime();
+        if (!adn.util.isInteger(lastSync) || nowInMillis - lastSync > 1 || SYNC_BOUNDARY) {
+          var img = doc.createElement("img");
+          img.setAttribute('alt', '');
+          img.setAttribute('src', extSyncUrl);
+          img.setAttribute('height', '1px');
+          img.setAttribute('width', '1px');
+          doc.body.appendChild(img);
+        }
+      };
+
+      adn.sync = function(folderId, aArgs) {
+        if (!adn.util.isNotBlankString(aArgs.externalSystemType) || !adn.util.isNotBlankString(aArgs.externalSystemUserId)) {
+          return adn.out.output("Need an external system type or external system user id", "sync", folderId, aArgs);
+        }
+        adnDataRequest(folderId, aArgs, {
+          method: "POST",
+          pick: ['externalSystemType', 'externalSystemUserId'],
+          locKey: 'sync'
+        });
+      };
+
+      adn.chbRequest = chbMethods;
+
+      adn.regScriptServe = function(htmlData, widgetId) {
+        var scriptEl = doc.getElementById("script-" + widgetId);
+        if (scriptEl && scriptEl.src && scriptEl.src.indexOf("format=js") > -1) {
+          initMemberVariables({
+            widgetId: widgetId,
+            container: 'div'
+          });
+          return misc.addWidgetIdToProcessAd(htmlData, widgetId);
+        }
+        return htmlData;
       };
 
       adn.request = function(args) {
-        initMemberVariables(args);
-        var method = ENUMS.methodEnums.ifr;
-        if (adn.util.isArray(args.adUnits)) {
-          method = ENUMS.methodEnums.composed;
-        } else if (adn.util.isArray(args.creatives)) {
-          method = ENUMS.methodEnums.preview;
+        var doRequest = function() {
+          initMemberVariables(args);
+          var method = ENUMS.methodEnums.ifr;
+          if (adn.util.isArray(args.adUnits)) {
+            method = ENUMS.methodEnums.composed;
+          } else if (adn.util.isArray(args.creatives)) {
+            method = ENUMS.methodEnums.preview;
+          }
+          init(args, requestMethods, method);
+        };
+
+        if (args.requestTiming === ENUMS.requestTiming.onReady) {
+          misc.onDocReady(doRequest);
+        } else if (args.requestTiming === ENUMS.requestTiming.onLoad) {
+          misc.onLoad(doRequest);
+        } else {
+          doRequest();
         }
-        init(args, requestMethods, method);
       };
       adn.display = function(args) {
         init(args, displayMethods, 'style');
@@ -3605,14 +3852,14 @@ try {
       var executeCalls = function() {
         try {
           var call;
-          while((call = adn.calls.shift())) {
+          while ((call = adn.calls.shift())) {
             try {
               call();
-            } catch(e) {
+            } catch (e) {
               adn.out.output(e, "executeCalls: inside while catch block", call, adn.calls);
             }
           }
-        } catch(e) {
+        } catch (e) {
           adn.out.output(e, "executeCalls: outside while catch block", adn.calls);
         }
       };
@@ -3625,6 +3872,6 @@ try {
       };
     })();
   })(adn, document, window);
-} catch(e) {
+} catch (e) {
   adn.out.output(e, "Blanket catch block");
 }
