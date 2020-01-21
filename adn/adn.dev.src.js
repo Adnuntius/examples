@@ -1297,7 +1297,6 @@ try {
           var messageType = delayedResize > 0 ? ENUMS.postMessageType.toParentResize : ENUMS.postMessageType.toParentPageLoad;
 
           var iframe = adsDivEl.getElementsByTagName("iframe")[0];
-          console.log("iframeFromAdsDivEl", iframe, delayedResize);
           if (iframe) {
             // need to do this in order to cover for when the iframe is position: fixed or position: absolute and weird things happen.
             var iframeDims = adn.util.getElementDimensions(iframe);
@@ -1307,10 +1306,8 @@ try {
             if (iframeDims.h > contentDims.h) {
               contentDims.h = iframeDims.h;
             }
-
-            console.log("contentDims", contentDims);
           }
-          if ((contentDims.w < 1 || contentDims.h < 1) && !hasDelayedResize) {
+          if ((contentDims.w < 1 || contentDims.h < 1) && delayedResize < 1) {
             resizeToContent = false;
           }
           misc.postMessageToParent({
@@ -1320,10 +1317,11 @@ try {
             h: contentDims.h,
             resizeToContent: resizeToContent
           });
+          console.log(adn.inIframe.getResponseCtrId(), contentDims.w, contentDims.h);
           if (delayedResize < 5) {
             win.setTimeout(function() {
               ev.handleChildPageLoad({}, delayedResize + 1);
-            }, 750);
+            }, 350);
           }
         },
         handleChildSubs: function(e, args) {
@@ -1449,7 +1447,6 @@ try {
           } else if (args.messageType === ENUMS.postMessageType.toParentPageLoad || args.messageType === ENUMS.postMessageType.toParentResize) {
             if (widgetSpec.resizeOnPageLoad !== false && (!adn.util.isFunction(widgetSpec.resizeOnPageLoad) || widgetSpec.resizeOnPageLoad(args) !== false)) {
               if (adn.util.isTrue(args.resizeToContent)) {
-                console.log("pageLoad");
                 parentMethods.iframeResizer({widgetId: widgetSpec.widgetId, w: args.w, h: args.h}, false);
               }
             }
@@ -2382,8 +2379,6 @@ try {
               targetEl.style.width = adn.util.dimension(args.w);
               targetEl.style.height = adn.util.dimension(args.h);
 
-              console.log("iframeResizer", widget, targetEl);
-
               if ((zeroW || zeroH) && displayNone) {
                 widget.style.display = 'none';
                 targetEl.style.display = 'none';
@@ -2394,7 +2389,6 @@ try {
             var adCount = parseInt(args.retAdCount, 10);
             var widgetSpec = gWidgetSpecs[args.widgetId];
             if (adCount === 0) {
-              console.log("styleFromAds000");
               parentMethods.iframeResizer({widgetId: args.widgetId, w: 0, h: 0}, gFeedback.inScreen !== ENUMS.feedback.inScreen.inAdUnit);
             } else if (adn.util.isNumber(adCount) && adCount > 0) {
               if (!widgetSpec || !adn.util.hasProperties(widgetSpec)) {
@@ -2402,7 +2396,6 @@ try {
               }
               widgetSpec.displayStatus = ENUMS.displayStatus.displayed;
               readings.initViewability();
-              console.log("styleFromAds");
               parentMethods.iframeResizer({
                 widgetId: args.widgetId,
                 w: parseInt(args.retAdsW, 10),
