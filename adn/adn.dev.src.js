@@ -788,7 +788,7 @@ try {
 
             dom.showTargetDiv(targetEl, adUnitArgs);
             adn.util.loadScriptElements(targetEl, adUnitArgs.widgetId);
-            
+
             adn.lib.doDebug(adUnitArgs, doc.getElementById(adUnitArgs.widgetId), targetEl);
             return true;
           }
@@ -946,11 +946,10 @@ try {
             var scriptContent = doc.createTextNode(content);
             scriptEl.appendChild(scriptContent);
             var targetEl = doc.getElementById(targetId) || doc.body;
-            console.log("---begin---");
+            console.log("---begin111---");
             console.log(targetEl);
             console.log(targetEl.parentNode);
             console.log(targetEl.parentNode.parentNode);
-            targetEl.parentNode.style.display = "block";
             console.log("is happening");
             console.log(scriptContent);
             console.log("---end---");
