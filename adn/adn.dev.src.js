@@ -130,6 +130,10 @@ try {
           github: {
             id: 'github',
             url: 'https://adnuntius.github.io/examples/adn/adn.dev.src.js'
+          },
+          localhost: {
+            id: 'localhost',
+            url: 'http://localhost:8001/adn.src.js'
           }
         },
         errorStatus: {
@@ -871,6 +875,19 @@ try {
             return aObj[aParam];
           }
         },
+        getNewViewability: function() {
+          return {
+            maxPercent: 0,
+            prevPercent: 0,
+            timeNone: 0,
+            timePartly: 0,
+            timeHalf: 0,
+            timeFully: 0,
+            timeIntersect: 0,
+            timeStart: 0,
+            isViewed: false
+          };
+        },
         onDocReady: function(fn) {
           if (doc.readyState === "complete" || doc.readyState === "interactive") {
             fn();
@@ -929,6 +946,11 @@ try {
             var scriptContent = doc.createTextNode(content);
             scriptEl.appendChild(scriptContent);
             var targetEl = doc.getElementById(targetId) || doc.body;
+            console.log("---begin---");
+            console.log(targetEl);
+            console.log(targetEl.parentNode);
+            console.log(targetEl.parentNode.parentNode);
+            console.log("---end---");
             targetEl.appendChild(scriptEl);
           } catch (e) {
             return adn.out.output(e, "loadScriptContent: in catch block");
@@ -1317,7 +1339,6 @@ try {
             h: contentDims.h,
             resizeToContent: resizeToContent
           });
-          console.log(adn.inIframe.getResponseCtrId(), contentDims.w, contentDims.h);
           if (delayedResize < 5) {
             win.setTimeout(function() {
               ev.handleChildPageLoad({}, delayedResize + 1);
@@ -2515,6 +2536,79 @@ try {
         }
       };
 
+      var timedObservation = function(adSpecParam, adId, threshold, maxTime, callback) {
+        var viewabilityTimeout = false;
+        var viewObserver = false;
+        var adSpecParamStatus = adSpecParam + "Status";
+
+        var notViewedEnum = ENUMS.viewabilityStatus.notViewed;
+        var viewedEnum = ENUMS.viewabilityStatus.viewed;
+        if (adSpecParam.indexOf("visibility") > -1) {
+          notViewedEnum = ENUMS.visibilityStatus.notVisible;
+          viewedEnum = ENUMS.visibilityStatus.visible;
+        }
+
+        var viewCallback = function(data) {
+          var adSpec = gAdSpecs[adId];
+          var now = new Date().getTime();
+
+          adSpec[adSpecParam] = adSpec[adSpecParam] || misc.getNewViewability();
+          adSpec[adSpecParamStatus] = adSpec[adSpecParamStatus] || notViewedEnum;
+
+          var successCallback = function() {
+            adSpec[adSpecParam].timeIntersect = adSpec[adSpecParam].timeIntersect + new Date().getTime() - adSpec[adSpecParam].timeStart;
+            adSpec[adSpecParamStatus] = viewedEnum;
+            callback(adSpec[adSpecParam]);
+            win.clearTimeout(viewabilityTimeout);
+            viewabilityTimeout = false;
+
+            viewObserver.disconnect();
+          };
+          if (adSpec[adSpecParamStatus] === notViewedEnum) {
+            if (data[0].intersectionRatio > 0 && data[0].intersectionRatio >= threshold) {
+              adSpec[adSpecParam].timeStart = now;
+              if (maxTime < 5) {
+                successCallback();
+              } else {
+                var successTime = maxTime - adSpec[adSpecParam].timeIntersect;
+                viewabilityTimeout = win.setTimeout(successCallback, successTime);
+              }
+              adSpec[adSpecParam].isViewed = true;
+            } else {
+              if (viewabilityTimeout && adSpec[adSpecParam].timeStart > 0) {
+                adSpec[adSpecParam].timeIntersect = adSpec[adSpecParam].timeIntersect + new Date().getTime() - adSpec[adSpecParam].timeStart;
+                adSpec[adSpecParam].timeStart = 0;
+                win.clearTimeout(viewabilityTimeout);
+                viewabilityTimeout = false;
+                adSpec[adSpecParam].isViewed = false;
+              }
+            }
+          }
+        };
+        viewObserver = new win.IntersectionObserver(viewCallback, {
+          root: null,
+          rootMargin: '0px',
+          threshold: threshold
+        });
+        viewObserver.observe(doc.getElementById(adId));
+
+        if (adSpecParam.indexOf("customTiming") < 0) {
+          return;
+        }
+        adn.util.addEventListener(win, "beforeunload", function() {
+          var adSpec = gAdSpecs[adId];
+
+          if (adSpec[adSpecParam].isViewed) {
+            adSpec[adSpecParam].timeIntersect = adSpec[adSpecParam].timeIntersect + new Date().getTime() - adSpec[adSpecParam].timeStart;
+          }
+
+          if (adSpec[adSpecParam].timeIntersect > 0) {
+            callback(adSpec[adSpecParam]);
+          }
+          adSpec[adSpecParam] = null;
+        });
+      };
+
       var processAd = function(iframeId, containerId, matchedAdCount) {
         var contentDims = {},
           ads = [],
@@ -2550,84 +2644,19 @@ try {
             displayStatus: ENUMS.displayStatus.displayed,
             viewabilityStatus: ogData.viewabilityStatus || ENUMS.viewabilityStatus.notViewed,
             visibilityStatus: ENUMS.visibilityStatus.notVisible,
-            viewability: {
-              maxPercent: 0,
-              prevPercent: 0,
-              timeNone: 0,
-              timePartly: 0,
-              timeHalf: 0,
-              timeFully: 0,
-              timeIntersect: 0,
-              timeStart: 0
-            }
+            viewability: misc.getNewViewability(),
+            visibility: misc.getNewViewability()
           };
 
           if (isNested && misc.supportsIntersectionObserver()) {
             // this section is for the ad being served inside another ad server's iframe
             var adId = a.id;
-            var observer = false;
-            var callback = function(data) {
-              var adSpec = gAdSpecs[adId];
-              if (adSpec.visibilityStatus === ENUMS.visibilityStatus.notVisible && data[0].intersectionRatio > 0) {
-                adSpec.visibilityStatus = ENUMS.visibilityStatus.visible;
-                readings.sendVisibilityImpressions();
-                var stillGoing = adn.util.find(gAdSpecs, function(adSpec) {
-                  return adSpec.isNested && adSpec.visibilityStatus === ENUMS.visibilityStatus.notVisible;
-                });
-                if (!stillGoing && observer) {
-                  observer.disconnect();
-                }
-              }
-            };
-            observer = new win.IntersectionObserver(callback, {
-              root: null,
-              rootMargin: '0px',
-              threshold: 0.01
+            timedObservation("visibility", adId, 0, 1, function() {
+              readings.sendVisibilityImpressions();
             });
-            observer.observe(doc.getElementById(adId));
-
-            var viewabilityTimeout = false;
-            var viewObserver = false;
-            var viewCallback = function(data) {
-              var adSpec = gAdSpecs[adId];
-              var now = new Date().getTime();
-
-              var successCallback = function() {
-                adSpec.viewability.timeIntersect = adSpec.viewability.timeIntersect + new Date().getTime() - adSpec.viewability.timeStart;
-                adSpec.viewabilityStatus = ENUMS.viewabilityStatus.viewed;
-                readings.sendViewableImpressions();
-                win.clearTimeout(viewabilityTimeout);
-                viewabilityTimeout = false;
-
-                var stillGoing = adn.util.find(gAdSpecs, function(adSpec) {
-                  return adSpec.isNested && adSpec.viewabilityStatus === ENUMS.viewabilityStatus.notViewed;
-                });
-                if (!stillGoing && viewObserver) {
-                  viewObserver.disconnect();
-                }
-              };
-              if (adSpec.viewabilityStatus === ENUMS.viewabilityStatus.notViewed) {
-                if (data[0].intersectionRatio >= 0.5) {
-                  adSpec.viewability.timeStart = now;
-
-                  var successTime = 1000 - adSpec.viewability.timeIntersect;
-                  viewabilityTimeout = win.setTimeout(successCallback, successTime);
-                } else {
-                  if (viewabilityTimeout && adSpec.viewability.timeStart > 0) {
-                    adSpec.viewability.timeIntersect = adSpec.viewability.timeIntersect + new Date().getTime() - adSpec.viewability.timeStart;
-                    adSpec.viewability.timeStart = 0;
-                    win.clearTimeout(viewabilityTimeout);
-                    viewabilityTimeout = false;
-                  }
-                }
-              }
-            };
-            viewObserver = new win.IntersectionObserver(viewCallback, {
-              root: null,
-              rootMargin: '0px',
-              threshold: 0.5
+            timedObservation("viewability", adId, 0.5, 1000, function() {
+              readings.sendViewableImpressions();
             });
-            viewObserver.observe(doc.getElementById(adId));
           }
         });
 
@@ -2662,6 +2691,12 @@ try {
           retAdsH: contentDims.h,
           widgetId: iframeId,
           isDivContainer: isDivContainer
+        });
+      };
+
+      var findAdSpec = function(pAdSpec, adId) {
+        return pAdSpec || adn.util.find(gAdSpecs, function(a) {
+          return a.adId === adId;
         });
       };
 
@@ -2707,12 +2742,6 @@ try {
               adn.out.output("sending a custom event failed", e, gAdSpecs, args, customArgs);
             }
           };
-
-          var findAdSpec = function() {
-            return pAdSpec || adn.util.find(gAdSpecs, function(a) {
-              return a.adId === adId;
-            });
-          };
           var makeEventHappen = function(adSpec) {
             if (misc.isSrcdocFrame() && !pAdSpec) {
               return misc.postMessageToParent({
@@ -2724,12 +2753,50 @@ try {
             }
             sendCustomEventFunc(adSpec);
           };
-          var adSpec = findAdSpec();
+          var adSpec = findAdSpec(pAdSpec, adId);
           if (adSpec) {
             makeEventHappen(adSpec);
           } else {
             onProcessAd.push(function() {
-              return makeEventHappen(findAdSpec());
+              return makeEventHappen(findAdSpec(pAdSpec, adId));
+            });
+          }
+        },
+        recordInScreen: function(args, customEventType, config) {
+          if (!misc.supportsIntersectionObserver()) {
+            return adn.out.devOutput("Browser doesn't support IntersectionObserver -- cannot do timing.", "recordInScreen");
+          }
+
+          var adId = misc.getParam(args, 'id') || args;
+          var adSpec = findAdSpec(null, adId);
+
+          var pThreshold = parseFloat(misc.getParam(config, 'threshold')) / 100;
+          var threshold = pThreshold >= 0 && pThreshold <= 1 ? pThreshold : 0.5;
+          if (adn.util.isDefined(pThreshold) && threshold !== pThreshold) {
+            adn.out.output("Threshold needs to be between 0 and 100. Using default value of " + (threshold * 100) + " instead.", "recordInScreen", config);
+          }
+
+          var oneMinute = 1000 * 60;
+          var defaultTime = oneMinute * 2;
+          var systemMaxTime = oneMinute * 5;
+          var pMaxTime = misc.getParam(config, 'maxTime');
+          var maxTime = pMaxTime > 0 && pMaxTime <= systemMaxTime ? pMaxTime : defaultTime;
+          if (adn.util.isDefined(maxTime) && pMaxTime !== maxTime) {
+            adn.out.output("Max time needs to be between 0 and " + systemMaxTime + ". Using default value of " + maxTime + " instead.", "recordInScreen", config);
+          }
+
+          var dataParam = "customTiming" + customEventType;
+
+          var doObservation = function() {
+            timedObservation(dataParam, adId, threshold, maxTime, function(data) {
+              adn.inIframe.sendCustomEvent(args, {customType: customEventType, customValue: data.timeIntersect});
+            });
+          };
+          if (adSpec) {
+            doObservation();
+          } else {
+            onProcessAd.push(function() {
+              doObservation();
             });
           }
         },
@@ -2937,14 +3004,7 @@ try {
             isolateFrame: adn.util.isDefined(argsAu.isolateFrame) ? argsAu.isolateFrame : (pArgs.isolateFrame || false),
             serverUrl: locs.imp + "&auId=" + argsAu.auId,
             resizeOnPageLoad: adn.util.isDefined(argsAu.resizeOnPageLoad) ? argsAu.resizeOnPageLoad : pArgs.resizeOnPageLoad,
-            viewability: {
-              maxPercent: 0,
-              prevPercent: 0,
-              timeNone: 0,
-              timePartly: 0,
-              timeHalf: 0,
-              timeFully: 0
-            }
+            viewability: misc.getNewViewability()
           };
           if (adn.util.isNumber(argsAu.refresh)) {
             data.refresh = {delay: parseInt(argsAu.refresh, 10), event: 'onViewable', count: 1};
