@@ -786,9 +786,9 @@ try {
             }
             targetEl.innerHTML = misc.getAdContentOnly(adContent, adUnitArgs.widgetId);
 
-            adn.util.loadScriptElements(targetEl, adUnitArgs.widgetId);
-
             dom.showTargetDiv(targetEl, adUnitArgs);
+            adn.util.loadScriptElements(targetEl, adUnitArgs.widgetId);
+            
             adn.lib.doDebug(adUnitArgs, doc.getElementById(adUnitArgs.widgetId), targetEl);
             return true;
           }
