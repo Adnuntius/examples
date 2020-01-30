@@ -946,6 +946,7 @@ try {
             var scriptContent = doc.createTextNode(content);
             scriptEl.appendChild(scriptContent);
             var targetEl = doc.getElementById(targetId) || doc.body;
+            debugger
             console.log("---begin---");
             console.log(targetEl);
             console.log(targetEl.parentNode);
