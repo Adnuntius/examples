@@ -946,11 +946,13 @@ try {
             var scriptContent = doc.createTextNode(content);
             scriptEl.appendChild(scriptContent);
             var targetEl = doc.getElementById(targetId) || doc.body;
-            debugger
             console.log("---begin---");
             console.log(targetEl);
             console.log(targetEl.parentNode);
             console.log(targetEl.parentNode.parentNode);
+            targetEl.parentNode.style.display = "block";
+            console.log("is happening");
+            console.log(scriptContent);
             console.log("---end---");
             targetEl.appendChild(scriptEl);
           } catch (e) {
