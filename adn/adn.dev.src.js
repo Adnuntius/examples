@@ -784,9 +784,8 @@ try {
             if (targetEl.getElementsByTagName("div").length > 0) {
               return;
             }
-            targetEl.innerHTML = misc.getAdContentOnly(adContent, adUnitArgs.widgetId);
-
             dom.showTargetDiv(targetEl, adUnitArgs);
+            targetEl.innerHTML = misc.getAdContentOnly(adContent, adUnitArgs.widgetId);
             adn.util.loadScriptElements(targetEl, adUnitArgs.widgetId);
 
             adn.lib.doDebug(adUnitArgs, doc.getElementById(adUnitArgs.widgetId), targetEl);
@@ -946,13 +945,12 @@ try {
             var scriptContent = doc.createTextNode(content);
             scriptEl.appendChild(scriptContent);
             var targetEl = doc.getElementById(targetId) || doc.body;
-            console.log("---begin111---");
+
+            console.log("--before");
             console.log(targetEl);
             console.log(targetEl.parentNode);
-            console.log(targetEl.parentNode.parentNode);
-            console.log("is happening");
-            console.log(scriptContent);
-            console.log("---end---");
+            console.log("--after");
+            
             targetEl.appendChild(scriptEl);
           } catch (e) {
             return adn.out.output(e, "loadScriptContent: in catch block");
