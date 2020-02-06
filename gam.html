@@ -7,7 +7,9 @@
 <script>
   window.googletag = window.googletag || {cmd: []};
   googletag.cmd.push(function() {
-    googletag.defineSlot('/19660636/leaderboard_1', [[250, 250]], 'div-gpt-ad-1580998995259-0').addService(googletag.pubads());
+    googletag.defineSlot('/19660636/leaderboard_1', [[250, 250]], 'div-gpt-ad-1580998995259-0')
+      .addService(googletag.pubads())
+        .setTargeting("adnData", "keyvalue");
     googletag.pubads().enableSingleRequest();
     googletag.enableServices();
   });
