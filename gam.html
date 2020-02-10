@@ -3,24 +3,15 @@
 <head>
 <meta charset="utf-8">
 <title>GAM test</title>
-  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
-<script>
-  window.googletag = window.googletag || {cmd: []};
-  googletag.cmd.push(function() {
-    googletag.defineSlot('/19660636/leaderboard_1', [[250, 250]], 'div-gpt-ad-1580998995259-0')
-      .addService(googletag.pubads())
-        .setTargeting("adnData", "keyvalue");
-    googletag.pubads().enableSingleRequest();
-    googletag.enableServices();
-  });
-</script>
 </head>
 <body>
-<!-- /19660636/leaderboard_1 -->
-<div id='div-gpt-ad-1580998995259-0'>
-  <script>
-    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1580998995259-0'); });
-  </script>
+<div id='googlead'>
+<script src='https://www.googletagservices.com/tag/js/gpt.js'>
+    googletag.pubads()
+      .definePassback('/19660636/leaderboard_1', [[250, 250]])
+      .setTargeting("adnData", "keyvalue")
+      .display();
+</script>
 </div>
 </body>
 </html>
