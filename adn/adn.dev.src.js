@@ -448,14 +448,15 @@ try {
             }
           });
 
+          var innerHtml = el.innerHTML;
+          var parentNode = el.parentNode;
           if (el.src) {
             var src = el.src;
-            el.parentNode.removeChild(el);
-            misc.loadScriptSrc(src, scriptTargetId, allAttr);
+            parentNode.removeChild(el);
+            misc.loadScriptSrc(src, parentNode.id || scriptTargetId, allAttr, innerHtml);
           } else {
-            var innerHtml = el.innerHTML;
-            el.parentNode.removeChild(el);
-            misc.loadScriptContent(innerHtml, scriptTargetId, allAttr);
+            parentNode.removeChild(el);
+            misc.loadScriptContent(innerHtml, parentNode.id || scriptTargetId, allAttr);
           }
         });
       },
@@ -901,16 +902,18 @@ try {
             adn.util.addEventListener(win, 'load', fn);
           }
         },
-        loadScriptSrc: function(src, targetId, attrs) {
+        loadScriptSrc: function(src, targetId, attrs, innerHtml) {
           if (!adn.util.isString(src)) {
             return adn.out.output("src should be a string", "loadScriptSrc", src);
           }
           try {
             var scriptEl = doc.createElement('script');
-            scriptEl.type = 'text/javascript';
             adn.util.forEach(attrs, function(attrValue, attrKey) {
               scriptEl.setAttribute(attrKey, attrValue);
             });
+            if (adn.util.isNotBlankString(innerHtml)) {
+              scriptEl.innerHTML = innerHtml;
+            }
             scriptEl.src = src;
 
             var scriptElContainer = targetId ? doc.getElementById(targetId) : null;
@@ -936,7 +939,6 @@ try {
           }
           try {
             var scriptEl = doc.createElement('script');
-            scriptEl.type = 'text/javascript';
 
             adn.util.forEach(attributes || {}, function(value, key) {
               scriptEl.setAttribute(key, value);
@@ -945,12 +947,6 @@ try {
             var scriptContent = doc.createTextNode(content);
             scriptEl.appendChild(scriptContent);
             var targetEl = doc.getElementById(targetId) || doc.body;
-
-            console.log("--before");
-            console.log(targetEl);
-            console.log(targetEl.parentNode);
-            console.log("--after");
-            
             targetEl.appendChild(scriptEl);
           } catch (e) {
             return adn.out.output(e, "loadScriptContent: in catch block");
@@ -1339,7 +1335,7 @@ try {
             h: contentDims.h,
             resizeToContent: resizeToContent
           });
-          if (delayedResize < 5) {
+          if (delayedResize < 10) {
             win.setTimeout(function() {
               ev.handleChildPageLoad({}, delayedResize + 1);
             }, 350);
@@ -1608,6 +1604,12 @@ try {
         };
 
         return {
+          getEuConsentAsObj: function() {
+            var euConsent = cookies.get("euconsent");
+            if (adn.util.isNotBlankString(euConsent)) {
+              return {consentString: euConsent};
+            }
+          },
           getAllIdsAsObj: function() {
             var cxenseIds = cookies.getIdsAsObj();
             var relay42Ids = cookies.get(providerKeys.relay42.userId);
@@ -1895,6 +1897,7 @@ try {
               // means this is a call to the ad server for the iframe.
               serverSrc += misc.encodeAsUrlParams(cookies.getIdsAsObj(args), true);
               serverSrc += misc.encodeAsUrlParams(cookies.getAllIdsAsObj() || {}, true);
+              serverSrc += misc.encodeAsUrlParams(cookies.getEuConsentAsObj() || {}, true);
 
               var consent = cookies.getConsent();
               if (consent.length > 0) {
@@ -3173,6 +3176,7 @@ try {
             if (adUnitsToSend.length > 0) {
               impRequestLoc += misc.encodeAsUrlParams(cookies.getIdsAsObj(wAdUnits[0]), true);
               impRequestLoc += misc.encodeAsUrlParams(cookies.getAllIdsAsObj() || {}, true);
+              impRequestLoc += misc.encodeAsUrlParams(cookies.getEuConsentAsObj() || {}, true);
 
               if (!requestId) {
                 requestId = "request-" + Math.random();
@@ -3514,6 +3518,7 @@ try {
         }
         serverUrl += misc.encodeAsUrlParams(cookies.getIdsAsObj(userIdObj), true);
         serverUrl += misc.encodeAsUrlParams(cookies.getAllIdsAsObj() || {}, true);
+        serverUrl += misc.encodeAsUrlParams(cookies.getEuConsentAsObj() || {}, true);
         var ajax = adn.util.getNewAjax("POST", serverUrl, function() {
           if (ajax.readyState && ajax.readyState !== 4) {
             return false;
@@ -3762,7 +3767,9 @@ try {
         args.sessionId = cookieData.sessionId;
 
         var locs = adn.lib.getAdnDataLocs(args);
-        var ajax = adn.util.getNewAjax(config.method, locs[config.locKey], adn.util.isFunction(cb) ? function() {
+        var serverUrl = locs[config.locKey];
+        serverUrl += misc.encodeAsUrlParams(cookies.getEuConsentAsObj() || {}, true);
+        var ajax = adn.util.getNewAjax(config.method, serverUrl, adn.util.isFunction(cb) ? function() {
           cb(ajax);
         } : null);
         ajax.withCredentials = !misc.isTestAddress(locs[config.locKey]);
