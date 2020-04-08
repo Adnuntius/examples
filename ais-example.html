@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="app">
+<head>
+<h1>AIS Example</h1>
+<div id="adn-0000000000047bfe"></div>
+<div id="adn-000000000004809e"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script type="text/javascript">
+        var cX = cX || {};
+        cX.callQueue = cX.callQueue || [];
+        window.adn = window.adn || {};
+        adn.calls = adn.calls || [];
+        cX.callQueue.push(['invoke', function () {
+            var segments = cX.getUserSegmentIds({
+                persistedQueryId: '9aa05d8e8105aa93dd1c54e82f24e5f0d0120821'
+            });
+            adn.calls.push(function () {
+                adn.request({
+                    protocol: 'https'
+                    siteId: '1139622151579595199',
+                    segments: segments,
+                    adUnits: [{
+                            auId: '0000000000047bfe',
+                            auW: 1400,
+                            auH: 315,
+                            requestParams: {
+                                proximity: 50,
+                                load: 'lazy'
+                            }
+                        },
+                        {
+                            auId: '000000000004809e',
+                            auW: 315,
+                            auH: 315,
+                            requestParams: {
+                                proximity: 50,
+                                load: 'lazy'
+                            }
+                        }
+                    ]
+                });
+            })
+        }]);
+    </script>
+    </div></html>   
