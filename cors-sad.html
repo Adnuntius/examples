@@ -9,13 +9,13 @@
 <p><small>Ad request: auId = 000000000003287c</small></p>
 <div id="adn-000000000003287c" style="display: none"></div>
 <script src="https://cdn.adnuntius.com/adn.js" async></script>
+
 <script>
-window.adn = window.adn || {}; adn.calls = adn.calls || [];
-adn.calls.push(function() {
-   adn.request({ adUnits: [
-      { auId: '000000000123890109283003287c', auW: '300', auH: '250' }
-   ]});
-});
+     var ajax = new XMLHttpRequest();
+     ajax.open("GET", "https://delivery.adnuntius.com/s?auId=000000000003287c");
+     ajax.setRequestHeader("Content-Type", "text/plain");
+     ajax.send();
 </script>
+
 </body>
 </html>
