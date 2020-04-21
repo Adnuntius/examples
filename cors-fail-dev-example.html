@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body><h3>Adnuntius Ad Tag Generator and Tester</h3>
+<hr>
+<p><small>Ad request: auId = 000000000003287c</small></p>
+<div id="adn-000000000003287c" style="display: none"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+
+<h1>Dev Example</h1>
+
+<p>Failing direct link will show error: <a href="https://adserver.dev.adnuntius.com/s?auId=000000000003287c">https://adserver.dev.adnuntius.com/s?auId=000000000003287c</a></p>
+
+<script>
+     var ajax = new XMLHttpRequest();
+     ajax.open("GET", "https://adserver.dev.adnuntius.com/s?auId=000000000003287c");
+     ajax.setRequestHeader("Content-Type", "text/plain");
+     ajax.send();
+</script>
+
+</body>
+</html>
