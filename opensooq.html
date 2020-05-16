@@ -1,15 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Direct Opensooq Google Ad</title>
+  <meta charset="utf-8">
+  <title>Opensooq Example</title>
 </head>
 <body>
-<h3>Direct Opensooq Google Ad</h3>
-<p>This is the direct Opensooq Google ad. No Adnuntius involved.</p>
-<script src='https://www.googletagservices.com/tag/js/gpt.js'>
-  googletag.pubads().definePassback('/65969644/generic', [320, 100]).display();
-</script>
+<h3>An Example using Google AdSense for Opensooq</h3>
+<hr>
 
+<div id="adn-00000000000432e3" style="display: none"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+  window.adn = window.adn || {}; adn.calls = adn.calls || [];
+  adn.calls.push(function() {
+    adn.request({ adUnits: [
+        { auId: '00000000000432e3', auW: '10000', auH: '10000', kv: { 'isolate': ['opensooq'] } }
+      ]});
+  });
+</script>
 </body>
 </html>
