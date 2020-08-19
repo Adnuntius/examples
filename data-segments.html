@@ -31,6 +31,10 @@ function updateProfile(field, value) {
 
 <script type="text/javascript">
 function getAds() {
+    adn.getSegments('93', {
+    onResponse: function(data) {
+        console.log(data);
+    }});
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() { adn.request({ env: 'dev', userId: adn.getBrowserId(), siteId: '0000000000000093', adUnits: [ {auId: '0000000000000092', auW: 200, auH: 50 } ]}); });
 }
 </script>
