@@ -34,24 +34,28 @@ function getAds() {
     adn.getGlobalId('0000000000000093', {
         env: 'dev',
         onResponse: function(data) {
+            console.log(data);
+            console.log(data.uui);
             uui = data.uui || '';
             adn.getSegments('0000000000000093', {
                 env: 'dev',
                 uui: uui,
                 onResponse: function(data) {
+                    console.log(data);
+                    console.log(data.segments);
                     segments = data.segments || [];
                     console.log({globalSegments: []});
                 }
             });
         }
     });
-    adn.getSegments('0000000000000093', {
-        env: 'dev',
-        onResponse: function(data) {
-            segments = data.segments || [];
-            console.log({siteSegments: []});
-        }
-    });
+//     adn.getSegments('0000000000000093', {
+//         env: 'dev',
+//         onResponse: function(data) {
+//             segments = data.segments || [];
+//             console.log({siteSegments: []});
+//         }
+//     });
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() { adn.request({ env: 'dev', userId: adn.getBrowserId(), siteId: '0000000000000093', adUnits: [ {auId: '0000000000000092', auW: 200, auH: 50 } ]}); });
 }
 </script>
