@@ -10,7 +10,7 @@
                 code: "hb",
                 mediaTypes: {
                   banner: {
-                    sizes: [[980, 360], [980, 300], [980, 240], [980, 120]]
+                    sizes: [[980, 360], [980, 300], [980, 240], [980, 120], [300,250]]
                   }
                 },
                 bids: [
@@ -32,7 +32,7 @@
     window.adn = window.adn || {};
     adn.calls = adn.calls || [];
 
-    var adnRequestInfo = {adUnits: [{auId: '000000000000dea1', targetId: 'hb', auW: 300, auH: 250}]}
+    var adnRequestInfo = {adUnits: [{auId: '00000000000432e3', targetId: 'hb', auW: 300, auH: 250}]}
 
     adn.calls.push(function() {
       adn.chbRequest(adUnits, adnRequestInfo, {
@@ -45,7 +45,7 @@
     </head>
 
     <body>
-        <h2>Basic Adnuntius via Prebid Example</h2>
+        <h2>Testing that Adnuntius via Prebid Works with Creative on Page testing</h2>
         <h5>Div-1</h5>
         <div id='hb'>
         </div>
