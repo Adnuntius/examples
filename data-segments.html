@@ -13,7 +13,7 @@
 <script type="text/javascript">
 function updateProfile(field, value) {
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
-        adn.visitor('93', {env: 'dev', protocol: 'https', profileValues: {[field]: value}});
+        adn.visitor('93', {env: 'dev', protocol: 'http', profileValues: {[field]: value}});
     });
 }
 </script>
@@ -33,10 +33,12 @@ function updateProfile(field, value) {
 function getAds() {
     adn.getGlobalId('0000000000000093', {
         env: 'dev',
+        protocol: 'http',
         onResponse: function(data) {
             uui = data.uui || '';
             adn.getSegments('0000000000000093', {
                 env: 'dev',
+                protocol: 'http',
                 uui: uui,
                 onResponse: function(data) {
                     segments = data.segments || [];
@@ -47,6 +49,7 @@ function getAds() {
     });
     adn.getSegments('0000000000000093', {
         env: 'dev',
+        protocol: 'http',
         onResponse: function(data) {
             segments = data.segments || [];
             console.log({siteSegments: segments});
