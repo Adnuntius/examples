@@ -2,7 +2,6 @@
     <title>Cookieless Ad Serving</title>
 <body>
 <h1>Cookieless Ad Serving</h1>
-    <p>Requires single in-iframe ad serving</p>
 <p><code>useCookies: false</code> means Adnuntius will not use cookies</p>
 <p><code>isolateFrame: true</code> means the creatives themselves will not be able to write cookies</p>
 <p><code>adn.useLocalStorage(false)</code> also means Adnuntius will not use local storage to store meta data about ad serving.</p>
@@ -13,7 +12,9 @@
     window.adn = window.adn || {}; adn.calls = adn.calls || [];
     adn.calls.push(function () {
         adn.useLocalStorage(false);
-        adn.request({auId: '0000000000006c42', auW: '1000', auH: '1000', useCookies: false, isolateFrame: true     
+        adn.request({
+            useCookies: false, isolateFrame: true,
+            adUnits: [{auId: '0000000000006c42', auW: '1000', auH: '1000'}]
         });
     });
 </script>
