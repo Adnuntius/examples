@@ -35,6 +35,10 @@ try {
             dt: 'data.adnuntius.com'
           }
         },
+        dn: {
+          as: 'delivery.',
+          dt: 'data.'
+        },
         sync: {
           PLATFORM_161: 'https://ads.creative-serving.com/cm?redir=https%3A%2F%2Fdata.adnuntius.com%2Fsync%3FbrowserId%3D{BROWSER_ID}%26folderId%3D{FOLDER_ID}%26externalSystemType%3DP161%26externalSystemUserId%3D%24%7BUUID%7D'
         },
@@ -56,6 +60,7 @@ try {
           onReady: 'onReady',
           onLoad: 'onLoad'
         },
+        syncAds: ['//pagead2.googlesyndication.com/pagead/show_ads.js'],
         postMessageType: {
           toParentImpression: 'toParentImpression',
           toParentPageLoad: 'toParentPageLoad',
@@ -154,9 +159,11 @@ try {
         userId: null,
         sessionId: null
       },
+      SANDBOX_ATTRIBUTES = "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox",
       RT_DATA_ATTR = 'data-response-token',
       TOP_WINDOW_DATA_ATTR = 'data-parent-top',
       ENV_DATA_ATTR = 'data-env',
+      DN_DATA_ATTR = 'data-dn',
       CONSOLE_DATA_ATTR = 'data-adn-console',
       SCRIPT_OVERRIDE_QSTRING = 'script-override',
       DEBUG_UI_URL_STRING = "adndebug123",
@@ -169,6 +176,7 @@ try {
       SYNC_BOUNDARY = 6 * 3600 * 1000, // 6 hours in milliseconds
       requestMethods,
       gScriptOverride,
+      gKeywords = [],
       gFeedback = {console: ENUMS.feedback.console.warnings, inScreen: ENUMS.feedback.inScreen.silent},
       gComposedRequest = ENUMS.composedRequest.noRequest;
 
@@ -225,6 +233,15 @@ try {
       },
       noop: function() {
       },
+      uniques: function(arr) {
+        var uniqArray = [];
+        for (var i = 0, l = arr.length; i < l; i++) {
+          if (uniqArray.indexOf(arr[i]) === -1 && arr[i] !== '') {
+            uniqArray.push(arr[i]);
+          }
+        }
+        return uniqArray;
+      },
       isTopWindow: function() {
         return win.top === win.self || (win.location.host === 'localhost:9876');
       },
@@ -237,7 +254,7 @@ try {
       getFrameElement: function() {
         try {
           return win.frameElement;
-        } catch (e) {
+        } catch(e) {
           adn.out.devOutput("Error looking up frame element");
         }
       },
@@ -327,7 +344,7 @@ try {
             elementPos.left += el.offsetLeft;
             elementPos.top += el.offsetTop;
             el = el.offsetParent;
-          } while (el);
+          } while(el);
         }
         return elementPos;
       },
@@ -480,7 +497,7 @@ try {
             w: width,
             h: height
           };
-        } catch (e) {
+        } catch(e) {
           return adn.out.output("element dimensions failed", "getElementDimensions: catch block", e);
         }
       },
@@ -553,6 +570,7 @@ try {
 
         var theEnvId = args.env || ENUMS.env.production.id;
         server = ENUMS.env[theEnvId] ? ENUMS.env[theEnvId] : ENUMS.env.production;
+        var serverOverride = args.dn ? ENUMS.dn[locType || 'as'] + args.dn : false;
 
         var defaultProtocol = 'http' + ((misc.isTestAddress(win.location.href) || theEnvId === ENUMS.env.localhost.id || win.location.protocol === 'http:') ? '' : 's');
         protocol = (args.protocol === 'https' || args.protocol === 'http' ? args.protocol : defaultProtocol) + '://';
@@ -560,7 +578,7 @@ try {
         var testEnv = misc.isTestAddress(theEnvId);
         gDevMode = testEnv || gDevMode;
 
-        var serverUrlBase = gDevMode && (theEnvId || '').indexOf("http") === 0 ? theEnvId : protocol + server[locType || 'as'];
+        var serverUrlBase = gDevMode && (theEnvId || '').indexOf("http") === 0 ? theEnvId : protocol + (serverOverride || server[locType || 'as']);
         return {
           serverUrlBase: serverUrlBase,
           baseRequestLoc: serverUrlBase + (testEnv ? "?" : "/i?") + "tzo=" + new Date().getTimezoneOffset(),
@@ -589,6 +607,7 @@ try {
             hook.gAdLocs = gAdLocs;
             hook.gDevMode = gDevMode;
             hook.gUserIds = gUserIds;
+            hook.gKeywords = gKeywords;
             hook.storageMetadataKey = STORAGE_ADV_METADATA_KEY;
             hook.cookies = cookies;
             hook.parentMethods = parentMethods;
@@ -620,6 +639,17 @@ try {
           }
           return ENUMS.env.production.id;
         },
+        getDn: function() {
+          var dataAttr = adn.inIframe.getIframeArgs()[DN_DATA_ATTR];
+          if (adn.util.isNotBlankString(dataAttr)) {
+            return dataAttr;
+          }
+          var bodyTag = doc.getElementsByTagName("body")[0];
+          dataAttr = bodyTag ? bodyTag.getAttribute(DN_DATA_ATTR) : '';
+          if (adn.util.isNotBlankString(dataAttr)) {
+            return dataAttr;
+          }
+        },
         getAdnDataLocs: function(aArgs) {
           var args = misc.clone(aArgs || {});
           args.protocol = 'https';
@@ -632,7 +662,8 @@ try {
             page: locations.baseRequestLoc.replace("/i?", "/page?") + misc.encodeAsUrlParams(urlArgs, true),
             visitor: locations.baseRequestLoc.replace("/i?", "/visitor?") + misc.encodeAsUrlParams(urlArgs, true),
             user: locations.baseRequestLoc.replace("/i?", "/usr?") + misc.encodeAsUrlParams(urlArgs, true),
-            sync: locations.baseRequestLoc.replace("/i?", "/sync?") + misc.encodeAsUrlParams(urlArgs, true)
+            sync: locations.baseRequestLoc.replace("/i?", "/sync?") + misc.encodeAsUrlParams(urlArgs, true),
+            id: locations.baseRequestLoc.replace("/i?", "/uui?") + misc.encodeAsUrlParams(urlArgs, true)
           };
         },
         getRequestLocs: function(args, checkImmeasurable) {
@@ -676,7 +707,7 @@ try {
               var jsonResponse = {};
               try {
                 jsonResponse = JSON.parse(ajax.responseText);
-              } catch (e) {
+              } catch(e) {
                 return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
               }
               if (jsonResponse && jsonResponse.metaData) {
@@ -781,7 +812,15 @@ try {
           }
           var adContent = adData.html;
           var matchedAdCount = adData.matchedAdCount;
-          if (adUnitArgs.container === ENUMS.container.div && adn.util.isNumber(matchedAdCount)) {
+
+          var showInDivRequest = adUnitArgs.container === ENUMS.container.div && adn.util.isNumber(matchedAdCount);
+          var showInDivCheck = showInDivRequest || (adContent.indexOf("data-ad-format=\"") > 0 && adContent.indexOf("adsbygoogle.js") > 0); // this is for responsive google ads, which must be put into a div
+          var showInDiv = showInDivCheck && (adn.util.filter(ENUMS.syncAds, function(syncAdString) {
+            // ads that are synchronous need to be put inside an iframe -- so skip DIV.
+            return adContent.indexOf(syncAdString) > 0;
+          })).length === 0;
+          if (showInDiv) {
+            adUnitArgs.container = ENUMS.container.div;
             if (targetEl.getElementsByTagName("div").length > 0) {
               return;
             }
@@ -792,6 +831,7 @@ try {
             adn.lib.doDebug(adUnitArgs, doc.getElementById(adUnitArgs.widgetId), targetEl);
             return true;
           }
+          adUnitArgs.container = ENUMS.container.iframe;
           // foundIframeContainer protects against double rendering
           var foundIframeContainer = adn.util.find(targetEl.childNodes, function(node) {
             return node.id === adUnitArgs.widgetId;
@@ -808,10 +848,16 @@ try {
             if (scriptOverride) {
               adContent = adContent.replace(/<script type="?text\/javascript"? src="?https?:\/\/[A-Za-z_0-9:.-]{5,50}\/adn.(src.)?js"?><\/script>/g, "<script type=\"text/javascript\" src=\"" + scriptOverride + "\" id=\"" + DEV_SCRIPT_ID + "\"></script>");
             }
+            if (adUnitArgs.isolateSubFrame) {
+              adContent = adContent.replace(/<iframe/g, "<iframe sandbox='" + SANDBOX_ATTRIBUTES + "'");
+            }
 
             var bodyReplace = "<body id='" + adUnitArgs.widgetId + "' " + TOP_WINDOW_DATA_ATTR + "='" + adn.util.isTopWindow() + "'";
             if (adUnitArgs.env && adUnitArgs.env !== ENUMS.env.production.id) {
               bodyReplace += " " + ENV_DATA_ATTR + "='" + adUnitArgs.env + "'";
+            }
+            if (adUnitArgs.dn) {
+              bodyReplace += " " + DN_DATA_ATTR + "='" + adUnitArgs.dn + "'";
             }
             adContent = adContent.replace("<body", bodyReplace);
 
@@ -923,7 +969,7 @@ try {
               var targetEl = doc.getElementsByTagName('script')[0];
               targetEl.parentNode.insertBefore(scriptEl, targetEl);
             }
-          } catch (e) {
+          } catch(e) {
             return adn.out.output(e, "loadScriptSrc: in catch block");
           }
         },
@@ -948,7 +994,7 @@ try {
             scriptEl.appendChild(scriptContent);
             var targetEl = doc.getElementById(targetId) || doc.body;
             targetEl.appendChild(scriptEl);
-          } catch (e) {
+          } catch(e) {
             return adn.out.output(e, "loadScriptContent: in catch block");
           }
         },
@@ -1170,7 +1216,7 @@ try {
             },
             cb = adn.util.isFunction(aCb) ? aCb : adn.util.noop,
             deleteMeObj = deleteFromObj || {};
-          var theKeys = ['auId', 'creativeId', 'networkId', 'targetId', 'c', 'kv', 'replacements', 'ps', 'auml', 'floorPrice'];
+          var theKeys = ['auId', 'creativeId', 'networkId', 'targetId', 'c', 'kv', 'keywords', 'replacements', 'ps', 'auml', 'floorPrice'];
           var objectKeys = [{server: 'userSegments', script: 'userSegments'}, {server: 'context', script: 'ctx'}];
           adn.util.forEach(aDataSrc, function(a) {
             if (filterCb(a) === true) {
@@ -1236,6 +1282,9 @@ try {
         encodeUrlParams: function(baseUrl, paramsObj, args) {
           var theArgs = args || {};
           misc.copyArgValues(paramsObj, theArgs, ['auml', 'ps', 'c']);
+          if (theArgs.keywords) {
+            paramsObj.keywords = theArgs.keywords.slice(0, 20);
+          }
           if (theArgs.kv) {
             // need this here because the kv needs to be an array that is stringified as an array
             paramsObj.kv = JSON.stringify(theArgs.kv);
@@ -1259,7 +1308,7 @@ try {
           try {
             baseUrl += misc.encodeAsUrlParams(paramsObj, true);
             return baseUrl;
-          } catch (e) {
+          } catch(e) {
             return adn.out.output("encoding urls failed", "insIframe: catch block", e);
           }
         },
@@ -1297,7 +1346,7 @@ try {
           var metaDataObj;
           try {
             metaDataObj = JSON.parse(jsonString);
-          } catch (e) {
+          } catch(e) {
             return adn.out.output("JSON Parse string for adnMeta failed", "regDestination", jsonString);
           }
           cookies.writeAdvLs(metaDataObj);
@@ -1338,7 +1387,7 @@ try {
           if (delayedResize < 10) {
             win.setTimeout(function() {
               ev.handleChildPageLoad({}, delayedResize + 1);
-            }, 350);
+            }, 295);
           }
         },
         handleChildSubs: function(e, args) {
@@ -1375,7 +1424,7 @@ try {
           } else {
             try {
               args = JSON.parse(aMessage.data);
-            } catch (e) {
+            } catch(e) {
               return adn.out.devOutput("Couldn't handle parsing", "handlePostMessage", aMessage.data, aMessage);
             }
             if (args[ENUMS.postMessageSrcKey] !== ENUMS.postMessageSrcValue) {
@@ -1470,7 +1519,7 @@ try {
             if (args.messageType === ENUMS.postMessageType.toParentPageLoad) {
               if (adn.util.isFunction(widgetSpec.onPageLoad)) {
                 var pageLoadArgs = {};
-                misc.copyArgValues(pageLoadArgs, widgetSpec, ['auId', 'widgetId', 'auW', 'auH', 'retAdsW', 'retAdsH', 'retAdCount', 'targetId', 'replacements', 'kv', 'userSegments', 'c', 'ps', 'auml', 'floorPrice', 'requestArgs']);
+                misc.copyArgValues(pageLoadArgs, widgetSpec, ['auId', 'widgetId', 'auW', 'auH', 'retAdsW', 'retAdsH', 'retAdCount', 'targetId', 'replacements', 'keywords', 'kv', 'userSegments', 'c', 'ps', 'auml', 'floorPrice', 'requestArgs']);
                 pageLoadArgs.w = args.w;
                 pageLoadArgs.h = args.h;
                 widgetSpec.onPageLoad(misc.normalise(pageLoadArgs));
@@ -1489,7 +1538,7 @@ try {
               } else {
                 parentMethods[args.method].call(parentMethods, args);
               }
-            } catch (e) {
+            } catch(e) {
               return adn.out.output(e, "catch block for calling method", args, e);
             }
 
@@ -1497,7 +1546,7 @@ try {
               misc.copyArgValues(widgetSpec, args, ['retAdsW', 'retAdsH', 'retAdCount']);
               if (adn.util.isFunction(widgetSpec.onImpressionResponse)) {
                 var returnArgs = {};
-                misc.copyArgValues(returnArgs, widgetSpec, ['auId', 'widgetId', 'auW', 'auH', 'retAdsW', 'retAdsH', 'retAdCount', 'replacements', 'targetId', 'kv', 'userSegments', 'c', 'ps', 'auml', 'floorPrice', 'requestArgs']);
+                misc.copyArgValues(returnArgs, widgetSpec, ['auId', 'widgetId', 'auW', 'auH', 'retAdsW', 'retAdsH', 'retAdCount', 'replacements', 'targetId', 'keywords', 'kv', 'userSegments', 'c', 'ps', 'auml', 'floorPrice', 'requestArgs']);
                 widgetSpec.onImpressionResponse(misc.normalise(returnArgs));
               }
               ev.handleChildSubs({}, {
@@ -1553,7 +1602,7 @@ try {
           if (adn.util.isString(storageString) && storageString.length > 0) {
             try {
               return JSON.parse(storageString);
-            } catch (e) {
+            } catch(e) {
               return adn.out.output("Error reading from local storage", "cookie.getLs", e, storageType, storageString);
             }
           }
@@ -1605,9 +1654,15 @@ try {
 
         return {
           getEuConsentAsObj: function() {
-            var euConsent = cookies.get("euconsent");
+            var euConsent = cookies.get("euconsent-v2") || cookies.get("euconsent");
             if (adn.util.isNotBlankString(euConsent)) {
               return {consentString: euConsent};
+            }
+          },
+          getAdnConsentAsObj: function() {
+            var adnConsent = cookies.get("adnconsent");
+            if (adn.util.isNotBlankString(adnConsent)) {
+              return {adnConsent: adnConsent};
             }
           },
           getAllIdsAsObj: function() {
@@ -1653,7 +1708,7 @@ try {
             var ca = decodedCookie.split(';');
             for (var i = 0; i < ca.length; i++) {
               var c = ca[i];
-              while (c.charAt(0) === ' ') {
+              while(c.charAt(0) === ' ') {
                 c = c.substring(1);
               }
               if (!name) {
@@ -1699,7 +1754,7 @@ try {
               } else {
                 win.localStorage.setItem(STORAGE_CONSENT_KEY, JSON.stringify(writeConsentArray));
               }
-            } catch (e) {
+            } catch(e) {
               adn.out.output("Problem setting item", "writeConsent", e, writeConsentArray);
             }
           },
@@ -1742,7 +1797,7 @@ try {
             try {
               win.sessionStorage.setItem(STORAGE_ADV_METADATA_KEY, JSON.stringify(sessionObj));
               win.localStorage.setItem(STORAGE_ADV_METADATA_KEY, JSON.stringify(lsArray));
-            } catch (e) {
+            } catch(e) {
               adn.out.output("Problem setting item", "writeAdvLs", e, sessionObj, lsArray);
             }
           },
@@ -1769,7 +1824,7 @@ try {
             try {
               win.sessionStorage.setItem(STORAGE_DAT_KEY, JSON.stringify(sessionParams));
               win.localStorage.setItem(STORAGE_DAT_KEY, JSON.stringify(lsParams));
-            } catch (e) {
+            } catch(e) {
               adn.out.output("Problem setting item", "writeDatLs", e, sessionParams, lsParams);
             }
           },
@@ -1818,7 +1873,7 @@ try {
               var dataArgs = misc.copyArgValues({
                 matchedAdCount: au.matchedAdCount,
                 html: au.html
-              }, wSpecArgs, ['auId', 'targetId', 'auW', 'auH', 'kv', 'userSegments', 'c', 'ps', 'replacements', 'auml', 'floorPrice', 'requestArgs']);
+              }, wSpecArgs, ['auId', 'targetId', 'auW', 'auH', 'kv', 'keywords', 'userSegments', 'c', 'ps', 'replacements', 'auml', 'floorPrice', 'requestArgs']);
               dataArgs.retAdCount = 0;
               dataArgs.retAdsW = 0;
               dataArgs.retAdsH = 0;
@@ -1892,6 +1947,9 @@ try {
             if (args.env && args.env !== ENUMS.env.production.id && ENUMS.env[args.env]) {
               paramsObj[ENV_DATA_ATTR] = args.env;
             }
+            if (args.dn) {
+              paramsObj[DN_DATA_ATTR] = args.dn;
+            }
             var serverSrc = misc.encodeUrlParams(args.serverUrl, paramsObj, args);
             if (args.serverUrl.length > 5) {
               // means this is a call to the ad server for the iframe.
@@ -1920,7 +1978,7 @@ try {
           ifr.frameBorder = '0';
 
           if (args.isolateFrame && misc.supportsSrcDoc()) {
-            ifr.setAttribute("sandbox", "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation");
+            ifr.setAttribute("sandbox", SANDBOX_ATTRIBUTES);
           }
 
           if (args.format === 'script') {
@@ -1962,7 +2020,7 @@ try {
                   var jsonResponse = {};
                   try {
                     jsonResponse = JSON.parse(ajax.responseText);
-                  } catch (e) {
+                  } catch(e) {
                     return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
                   }
                   if (jsonResponse && jsonResponse.metaData) {
@@ -1984,7 +2042,7 @@ try {
               }
             }
             return true;
-          } catch (e) {
+          } catch(e) {
             adn.out.output("sending a " + feedbackText + " event failed", e);
             return false;
           }
@@ -2084,12 +2142,12 @@ try {
 
             try {
               windowSize = adn.util.getWindowSize();
-            } catch (e) {
+            } catch(e) {
               adn.out.output("takeProximityReading window size calcs off", e);
             }
             try {
               scrollPos = adn.util.getScrollPos();
-            } catch (e) {
+            } catch(e) {
               adn.out.output("takeProximityReading scroll calcs off", e);
             }
 
@@ -2150,7 +2208,7 @@ try {
                   }
                 }
                 widgetEl.style.display = previousDisplay;
-              } catch (e) {
+              } catch(e) {
                 adn.out.output("some catch error for takeProximityReading", e);
               }
             });
@@ -2192,7 +2250,7 @@ try {
                 gWindowStats.prevWindowWidth = windowSize.width;
                 gWindowStats.prevWindowHeight = windowSize.height;
               }
-            } catch (e) {
+            } catch(e) {
               adn.out.output("takeViewabilityReading window size calcs off", e);
             }
             var scrollPos;
@@ -2204,7 +2262,7 @@ try {
               }
               gWindowStats.maxViewLeft = Math.max(scrollPos.left + windowSize.width, gWindowStats.maxViewLeft);
               gWindowStats.maxViewTop = Math.max(scrollPos.top + windowSize.height, gWindowStats.maxViewTop);
-            } catch (e) {
+            } catch(e) {
               adn.out.output("takeViewabilityReading scroll calcs off", e);
             }
             var now = new Date().getTime();
@@ -2299,7 +2357,7 @@ try {
                     isDivContainer: spec.container === ENUMS.container.div || spec.isDivContainer
                   });
                 }
-              } catch (e) {
+              } catch(e) {
                 adn.out.output("takeViewabilityReading off", e);
               }
             });
@@ -2348,6 +2406,8 @@ try {
               if (args.stack === 'relative') {
                 targetEl.style.position = 'relative';
                 widget.style.position = 'absolute';
+              } else if (args.stack === 'fixed') {
+                widget.style.position = 'fixed';
               } else if (args.stack === 'absolute') {
                 if (!adn.util.isBlankString(targetEl.style.position) && targetEl.style.position === 'relative') {
                   targetEl.style.position = 'static';
@@ -2452,7 +2512,7 @@ try {
             return adn.out.output("Missing some ad unit info response handlers", "handleAdUnitInfo", adInfoHandlers, args);
           }
           var adUnitInfo = args.adUnitInfo;
-          var abridgedAdUnitInfo = misc.copyArgValues({}, adUnitInfo, ["auId", "latitude", "longitude", "adStatus", "auH", "auW", "collapsible", "display", "c", "kv", "replacements", "auml", "ps", "displayStatus", "targetId", "targetClass", "widgetId", "functionCalls", "requestParams", "method", "onNoMatchedAds", "onImpressionResponse", "onPageLoad", "usi", "siteId", "userId", "sessionId", "segments", "userSegments", "resizeOnPageLoad", "ctx"]);
+          var abridgedAdUnitInfo = misc.copyArgValues({}, adUnitInfo, ["auId", "latitude", "longitude", "adStatus", "auH", "auW", "collapsible", "display", "c", "kv", "keywords", "replacements", "auml", "ps", "displayStatus", "targetId", "targetClass", "widgetId", "functionCalls", "requestParams", "method", "onNoMatchedAds", "onImpressionResponse", "onPageLoad", "usi", "siteId", "userId", "sessionId", "segments", "userSegments", "resizeOnPageLoad", "ctx"]);
           adn.util.forEach(infoHandlers, function(h) {
             h(abridgedAdUnitInfo);
           });
@@ -2625,11 +2685,11 @@ try {
           ads = adn.util.filter(adsDivEl.getElementsByTagName("div"), function(el) {
             return el.className.indexOf(ENUMS.cwClass) > -1 && (el.id.indexOf(ENUMS.adIdPrefix) === 0);
           });
-        } catch (e) {
+        } catch(e) {
           contentDims = {};
         }
 
-        gAdLocs = adn.lib.getRequestLocs({env: gDevMode ? 'http://localhost:8000/test' : adn.lib.getEnv()}, false);
+        gAdLocs = adn.lib.getRequestLocs({env: gDevMode ? 'http://localhost:8000/test' : adn.lib.getEnv(), dn: adn.lib.getDn()}, false);
 
         // isNested lets you know if the Adnuntius ad is a third-party creative in another ad server
         var isDivContainer = adsDivEl && adsDivEl.tagName.toLowerCase() === 'div' && (containerId !== adn.inIframe.getResponseCtrId() || containerId.indexOf(ENUMS.widgetIdPrefix) === 0);
@@ -2672,7 +2732,7 @@ try {
           }
           adn.util.addEventListener(cwElPerItemEl, 'click', function(e) {
             var linkNode = e.target;
-            while (linkNode && linkNode.nodeName.toLowerCase() !== 'a') {
+            while(linkNode && linkNode.nodeName.toLowerCase() !== 'a') {
               linkNode = linkNode.parentNode;
             }
             if (linkNode && !misc.getEnvFromHref(linkNode.href)) {
@@ -2706,8 +2766,8 @@ try {
       return {
         sendCustomEvent: function(args, customArgs, pAdSpec) {
           var adId = misc.getParam(args, 'id') || args;
-          if (!adn.util.isDefined(adId) || !adn.util.isString(misc.getParam(customArgs, 'customType'))) {
-            return adn.out.output("Missing an ad ID or customType to perform the custom event", "sendCustomEvent", args, customArgs);
+          if (!adn.util.isDefined(adId) || !adn.util.isDefined(customArgs)) {
+            return adn.out.output("Missing an ad ID to perform the custom event", "sendCustomEvent", args, customArgs);
           }
           var sendCustomEventFunc = function(adSpec) {
             if (!adn.util.isObject(adSpec)) {
@@ -2716,32 +2776,47 @@ try {
             if (!adn.util.isString(adSpec.rt)) {
               return adn.out.output("Need a response token on the spec object to send imp", "sendCustomEvent", adSpec, gAdSpecs, args, customArgs);
             }
-            var customRequestLoc = adn.lib.getRequestLocs({env: gDevMode ? 'http://localhost:8000/test' : adn.lib.getEnv()}).custom;
+            var customRequestLoc = adn.lib.getRequestLocs({env: gDevMode ? 'http://localhost:8000/test' : adn.lib.getEnv(), dn: adn.lib.getDn()}).custom;
             if (adSpec && gWidgetSpecs && gWidgetSpecs[adSpec.widgetId]) {
               customRequestLoc = gWidgetSpecs[adSpec.widgetId].customRequestLoc;
             }
             if (!customRequestLoc) {
               return adn.out.output("Need a custom request loc", "sendCustomEvent", customRequestLoc, adSpec, gAdSpecs, args, customArgs);
             }
-            try {
-              var customValue = parseInt(customArgs.customValue, 10);
-              var qParams = {
-                rt: adSpec.rt,
-                customType: customArgs.customType,
+            var uncheckedEventArray = misc.getParam(customArgs, 'events') || [{
+              customType: misc.getParam(customArgs, 'customType'),
+              customValue: misc.getParam(customArgs, 'customValue')
+            }];
+            var checkedEventArray = [];
+            adn.util.forEach(adn.util.isArray(uncheckedEventArray) ? uncheckedEventArray : [], function(event) {
+              if (!adn.util.isString(misc.getParam(event, 'customType'))) {
+                adn.out.output("Missing type for the custom event", "sendCustomEvent", event, args, customArgs);
+                return;
+              }
+              var customValue = parseInt(misc.getParam(event, 'customValue'), 10);
+              var customEvent = {
+                customType: event.customType,
                 customValue: adn.util.isNumber(customValue) ? customValue : 0
               };
-              if (qParams.customValue === 0) {
-                delete qParams.customValue;
+              if (customEvent.customValue === 0) {
+                delete customEvent.customValue;
               }
-              var loc = customRequestLoc + misc.encodeAsUrlParams(qParams, true);
+              checkedEventArray.push(customEvent);
+            });
+
+            if (checkedEventArray.length === 0) {
+              return adn.out.output("Found no valid custom events", "sendCustomEvent", args, customArgs);
+            }
+            try {
+              var loc = customRequestLoc + misc.encodeAsUrlParams({rt: adSpec.rt}, true);
               if (misc.isTestAddress(loc)) {
                 adn.out.devOutput("Custom request loc being send", "sending", adSpec, loc);
               } else {
-                var ajax = adn.util.getNewAjax("GET", loc);
+                var ajax = adn.util.getNewAjax("POST", loc);
                 ajax.withCredentials = !misc.isTestAddress(loc);
-                ajax.send();
+                ajax.send(JSON.stringify({events: checkedEventArray}));
               }
-            } catch (e) {
+            } catch(e) {
               adn.out.output("sending a custom event failed", e, gAdSpecs, args, customArgs);
             }
           };
@@ -2941,9 +3016,24 @@ try {
         mAdUnits = [];
         mCreatives = [];
 
+        if (gKeywords.length === 0) {
+          var metaKeywords = doc.querySelector("meta[name='keywords']");
+          if (metaKeywords && metaKeywords.content) {
+            gKeywords = adn.util.uniques(adn.util.map(metaKeywords.content.split(","), function(k) {
+              return adn.util.trim(k);
+            })).slice(0, 100);
+          }
+        }
+
         var initAdUnit = function(dataStore, argsAu, argsParent, requestArgs) {
           var pArgs = adn.util.isObject(argsParent) ? misc.clone(argsParent) : {};
           var randomNum = Math.random();
+
+          var auKeywords = argsAu.keywords || pArgs.keywords || [];
+          if (adn.util.isString(auKeywords)) {
+            auKeywords = [auKeywords];
+          }
+          var kws = auKeywords.length > 0 ? adn.util.uniques(gKeywords.concat(auKeywords)) : gKeywords;
           var data = {
             auId: argsAu.auId || argsAu.targetId || argsAu.widgetId,
             requestArgs: requestArgs,
@@ -2961,6 +3051,7 @@ try {
             c: argsAu.c || pArgs.c || undefined,
             ctx: argsAu.ctx || pArgs.ctx || win.location.href,
             kv: argsAu.kv || pArgs.kv || undefined,
+            keywords: kws.length > 0 ? kws : undefined,
             auml: argsAu.auml || undefined,
             replacements: argsAu.replacements || pArgs.replacements,
             segments: argsAu.segments || pArgs.segments,
@@ -2970,6 +3061,7 @@ try {
             displayStatus: ENUMS.displayStatus.notDisplayed,
             container: ENUMS.container[(argsAu.container || pArgs.container || 'nothing')] || ENUMS.container.iframe,
             env: argsAu.env || pArgs.env || ENUMS.env.production.id,
+            dn: argsAu.dn || pArgs.dn || false,
             viewabilityStatus: ENUMS.viewabilityStatus.notViewed,
             visibilityStatus: ENUMS.visibilityStatus.notVisible,
             impRequestLoc: locs.imp,
@@ -3005,6 +3097,7 @@ try {
             targetClass: pArgs.targetClass || argsAu.targetClass,
             targetId: argsAu.targetId || ("adn-" + (argsAu.auId || argsAu.creativeId) + ((pArgs.targetClass || argsAu.targetClass) ? randomNum : "")),
             isolateFrame: adn.util.isDefined(argsAu.isolateFrame) ? argsAu.isolateFrame : (pArgs.isolateFrame || false),
+            isolateSubFrame: adn.util.isDefined(argsAu.isolateSubFrame) ? argsAu.isolateSubFrame : (pArgs.isolateSubFrame || false),
             serverUrl: locs.imp + "&auId=" + argsAu.auId,
             resizeOnPageLoad: adn.util.isDefined(argsAu.resizeOnPageLoad) ? argsAu.resizeOnPageLoad : pArgs.resizeOnPageLoad,
             viewability: misc.getNewViewability()
@@ -3107,7 +3200,7 @@ try {
                   var adContent;
                   try {
                     adContent = ajax.responseText;
-                  } catch (e) {
+                  } catch(e) {
                     return adn.out.output(e, "ajax.onreadystatechange: catch block", creative.onError);
                   }
 
@@ -3192,7 +3285,7 @@ try {
                   var ads;
                   try {
                     ads = JSON.parse(ajax.responseText);
-                  } catch (e) {
+                  } catch(e) {
                     return adn.out.output(e, "ajax.onreadystatechange: catch block", wAdUnits[0].onError);
                   }
                   if (!ads.adUnits) {
@@ -3366,126 +3459,6 @@ try {
         return getErrorWidgets().length;
       };
 
-      adn.contentWidget = function(args) {
-        if (!args) {
-          return adn.out.output("Insufficient args to make a content widget", "adn.contentWidget", args);
-        }
-        if (adn.util.isNotBlankString(args.auId)) {
-          if (!adn.util.isArray(args.adPositions) || args.adPositions.length < 1) {
-            return adn.out.output("Insufficient args to make a content widget -- if auId is specified, need adPositions array", "adn.contentWidget", args);
-          }
-          if (!args.widgetId && !adn.util.isNotBlankString(args.template)) {
-            return adn.out.output("Insufficient args to make a content widget -- need a widget ID or a template if only an auId has been specified", "adn.contentWidget", args);
-          }
-        }
-        if (!args.widgetId && !args.auId) {
-          return adn.out.output("Insufficient args to make a content widget -- need a widgetId or an auId specified", "adn.contentWidget", args);
-        }
-
-        var renderWidget = function(contentData, adData) {
-          var ads = (adData && adData.responseJSON && adData.responseJSON.adUnits.length > 0) ? adData.responseJSON.adUnits[0].ads : false;
-          var html = '';
-          var adTick = 0;
-          var response = {};
-          if (contentData) {
-            try {
-              response = JSON.parse(contentData);
-            } catch (e) {
-              adn.out.output("JSON parsing ajax content call failed", "contentWidget", e, args);
-            }
-          }
-          response.template = args.template || response.template;
-
-          var loopItems = [];
-          if (adn.util.isArray(response.items)) {
-            loopItems = response.items;
-          } else if (adn.util.isArray(args.adPositions) && adn.util.isArray(ads)) {
-            loopItems = args.adPositions.length > ads.length ? ads : args.adPositions;
-          }
-          adn.util.forEach(loopItems, function(item, index) {
-            if (ads && ads[adTick]) {
-              if (args.adPositions.indexOf(index) > -1) {
-                item = {};
-                var adAssets = ads[adTick].assets;
-                var adTexts = ads[adTick].text;
-                var adLabelText = args.adLabelText || 'Ad';
-                item.ad_label = (args.adLabel) ? args.adLabel : '<div class="adLabel">' + adLabelText + '</div>';
-                item.click_url = ads[adTick].urls ? ads[adTick].urls.destination : '';
-                item.dominantimage = adAssets && adAssets.image ? adAssets.image.cdnId : '';
-                item.title = adTexts && adTexts.title ? adTexts.title.content : '';
-                item.description = adTexts && adTexts.description ? adTexts.description.content : '';
-                adTick++;
-              }
-            }
-
-            var output = response.template;
-            var templateItem = output.match(/{{(\b\w*|\w*-\w*\b)}}/g);
-            adn.util.forEach(templateItem, function(arg) {
-              var argItem = arg.replace('{{', '').replace('}}', '');
-              var re = new RegExp(arg, "g");
-              if (item[argItem]) {
-                output = output.replace(re, item[argItem]);
-              } else {
-                output = output.replace(re, '');
-              }
-            });
-            html += output;
-          });
-
-          var targetId = args.targetId || 'adn-' + (args.widgetId ? args.widgetId : args.auId);
-          var targetElement = doc.getElementById(targetId);
-          if (!targetElement) {
-            return adn.out.output("Couldn't find target targetElement", "adn.contentWidget", targetId, args);
-          }
-          targetElement.innerHTML = html;
-        };
-
-        var adnResponse,
-          contentResponse;
-
-        var renderWidgetCoordinator = function(data) {
-          if (data.response) {
-            contentResponse = data.response;
-          } else {
-            adnResponse = data;
-          }
-          if (args.auId && args.widgetId) {
-            if (contentResponse && adnResponse) {
-              return renderWidget(contentResponse, adnResponse);
-            }
-          } else if (args.auId && adnResponse) {
-            return renderWidget(null, adnResponse);
-          } else if (args.widgetId && contentResponse) {
-            return renderWidget(contentResponse);
-          }
-        };
-
-        if (args.auId) {
-          adn.requestData({
-            auId: args.auId,
-            onSuccess: renderWidgetCoordinator
-          });
-        }
-        if (!args.widgetId) {
-          return;
-        }
-        var ajax = adn.util.getNewAjax("POST", "https://api.cxense.com/public/widget/data", function() {
-          if (ajax.readyState && ajax.readyState !== 4) {
-            return false;
-          }
-          if (!ajax.status || ajax.status === 200) {
-            return renderWidgetCoordinator(ajax);
-          }
-          return adn.out.output("Poor response from cxense", "adn.contentWidget", ajax);
-        });
-        var cxWidgetData = {
-          "widgetId": args.widgetId,
-          "user": {"ids": {"usi": args.usi || cookies.get('cX_P')}},
-          "context": {"url": args.url || win.location.href}
-        };
-        ajax.send(JSON.stringify(cxWidgetData));
-      };
-
       adn.requestData = function(args) {
         if (!adn.util.isDefined(args.auId) && !adn.util.isArray(args.adUnits)) {
           return adn.out.output("Need an ad unit id or adUnits to make this work.", "adn.requestData", args);
@@ -3542,7 +3515,7 @@ try {
                 cookies.writeAdvLs(jsonData.metaData);
               }
               return jsonData;
-            } catch (e) {
+            } catch(e) {
               makeResponse({error: e, errorText: "Error with parsing the response text"});
               return adn.out.output("Parsing response text fail", "ajax.onreadystatechange: catch block", e);
             }
@@ -3586,7 +3559,7 @@ try {
             var ajaxResponse;
             try {
               ajaxResponse = JSON.parse(ajax.responseText);
-            } catch (e) {
+            } catch(e) {
               return adn.out.output(e, "ajax.onreadystatechange: catch block", ajax);
             }
             if (ajaxResponse.metaData) {
@@ -3610,10 +3583,11 @@ try {
         gComposedAds = {};
         gWindowStats = {};
         gRequestInfo = {};
+        gKeywords = [];
       };
 
       var chbMethods = (function() {
-        var chbRequestCounts = 0;
+        var chbRequests = [];
 
         var PREBID_TIMEOUT = 2000;
         var PBJS_LOAD_FAILSAFE_TIMEOUT = 4000;
@@ -3631,118 +3605,169 @@ try {
           return returnValue;
         };
 
-        function initAdserver(locPbjs, adnRequest, config, prebidLoadTimeout) {
-          chbRequestCounts--;
-          if (chbRequestCounts < 0) {
-            return;
-          }
-          locPbjs.initAdserverSet = true;
-
-          adn.calls.push(function() {
-
-            var makePrebidHappen = function() {
-              var setGptAsync = !prebidLoadTimeout && adn.util.isTrue(misc.getParam(config, 'gptAsync'));
-              if (setGptAsync) {
-                locPbjs.setTargetingForGPTAsync && locPbjs.setTargetingForGPTAsync();
-              }
-              var resps = adn.util.isFunction(locPbjs.getBidResponses) ? locPbjs.getBidResponses() : [];
-              var noBidReqs = adn.util.isFunction(locPbjs.getNoBids) ? locPbjs.getNoBids() : [];
-              var isDebugMode = adn.util.isTrue(misc.getParam(config, 'debug'));
-              if (isDebugMode) {
-                if (prebidLoadTimeout) {
-                  adn.out.output("Prebid.js load timed-out", "headerBidRequest");
-                }
-                adn.out.output("Raw bid responses in prebid", "headerBidRequest", resps);
-                adn.out.output("The prebid requests with no bids", "headerBidRequest", noBidReqs);
-              }
-              adnRequest.headerBids = [];
-              adn.util.forEach(resps, function(resp) {
-                adn.util.forEach(resp.bids, function(bid) {
-                  var bidClone = misc.clone(bid);
-
-                  // delete null dealId value
-                  if (!bidClone.dealId) {
-                    delete bidClone.dealId;
-                  }
-
-                  adnRequest.headerBids.push(bidClone);
-                });
-              });
-
-              adn.util.forEach(noBidReqs, function(nbReq) {
-                adn.util.forEach(nbReq.bids, function(bid) {
-                  var bidClone = misc.clone(bid);
-                  bidClone.cpm = 0;
-                  bidClone.statusMessage = "Bid returned empty or error response";
-
-                  var bidderCode = bid.bidderCode || bid.bidder;
-                  bidClone.bidderCode = adn.util.isNotBlankString(bidderCode) ? bidderCode : "";
-                  if (!adn.util.isNotBlankString(bidderCode)) {
-                    adn.out.output("Invalid bidder code has been set. Needs to be a String.", "headerBidRequest", bid.bidderCode || bid.bidder, bid);
-                  }
-
-                  var isValid = isValidChbSizes(bid.sizes);
-                  if (!isValid) {
-                    adn.out.output("Invalid sizes have been configured. Should be an two-dimension array of integers within an array", "headerBidRequest", bid.sizes, bid);
-                  }
-                  bidClone.sizes = isValid ? bid.sizes : [];
-
-                  // delete null dealId value
-                  if (!bidClone.dealId) {
-                    delete bidClone.dealId;
-                  }
-
-                  adnRequest.headerBids.push(bidClone);
-                });
-              });
-
-              if (isDebugMode) {
-                adn.out.output("Header bids sent through to Adnuntius", "headerBidRequest", adnRequest.headerBids);
-              }
-
-              adn.request(adnRequest);
-            };
-
-            if (prebidLoadTimeout) {
-              makePrebidHappen();
-            } else {
-              locPbjs.que.push(makePrebidHappen);
-            }
+        function getChbRequest(reqId) {
+          return adn.util.find(chbRequests, function(r) {
+            return r.reqId === reqId;
           });
         }
 
-        return function(adUnits, adnRequest, config) {
+        function deleteChbRequest(reqId) {
+          chbRequests = adn.util.filter(chbRequests, function(r) {
+            return r.reqId !== reqId;
+          });
+        }
+
+        function initAdserver(locPbjs, adnRequest, config, reqId, prebidLoadTimeout) {
+          if (!getChbRequest(reqId)) {
+            return;
+          }
+          deleteChbRequest(reqId);
+
+          var makePrebidHappen = function() {
+            var setGptAsync = !prebidLoadTimeout && adn.util.isTrue(misc.getParam(config, 'gptAsync'));
+            if (setGptAsync) {
+              locPbjs.setTargetingForGPTAsync && locPbjs.setTargetingForGPTAsync();
+            }
+            var resps = adn.util.isFunction(locPbjs.getBidResponses) ? locPbjs.getBidResponses() : [];
+            var noBidReqs = adn.util.isFunction(locPbjs.getNoBids) ? locPbjs.getNoBids() : [];
+            var isDebugMode = adn.util.isTrue(misc.getParam(config, 'debug'));
+            if (isDebugMode) {
+              if (prebidLoadTimeout) {
+                adn.out.output("Prebid.js load timed-out", "headerBidRequest");
+              }
+              adn.out.output("Raw bid responses in prebid", "headerBidRequest", resps);
+              adn.out.output("The prebid requests with no bids", "headerBidRequest", noBidReqs);
+            }
+            adnRequest.headerBids = [];
+            adn.util.forEach(resps, function(resp) {
+              adn.util.forEach(resp.bids, function(bid) {
+                var bidClone = misc.clone(bid);
+
+                // delete null dealId value
+                if (!bidClone.dealId) {
+                  delete bidClone.dealId;
+                }
+
+                adnRequest.headerBids.push(bidClone);
+              });
+            });
+
+            adn.util.forEach(noBidReqs, function(nbReq) {
+              adn.util.forEach(nbReq.bids, function(bid) {
+                var bidClone = misc.clone(bid);
+                bidClone.cpm = 0;
+                bidClone.statusMessage = "Bid returned empty or error response";
+
+                var bidderCode = bid.bidderCode || bid.bidder;
+                bidClone.bidderCode = adn.util.isNotBlankString(bidderCode) ? bidderCode : "";
+                if (!adn.util.isNotBlankString(bidderCode)) {
+                  adn.out.output("Invalid bidder code has been set. Needs to be a String.", "headerBidRequest", bid.bidderCode || bid.bidder, bid);
+                }
+
+                var isValid = isValidChbSizes(bid.sizes);
+                if (!isValid) {
+                  adn.out.output("Invalid sizes have been configured. Should be an two-dimension array of integers within an array", "headerBidRequest", bid.sizes, bid);
+                }
+                bidClone.sizes = isValid ? bid.sizes : [];
+
+                // delete null dealId value
+                if (!bidClone.dealId) {
+                  delete bidClone.dealId;
+                }
+
+                adnRequest.headerBids.push(bidClone);
+              });
+            });
+
+            if (isDebugMode) {
+              adn.out.output("Header bids sent through to Adnuntius", "headerBidRequest", adnRequest.headerBids);
+            }
+
+            adn.request(adnRequest);
+          };
+
+          if (prebidLoadTimeout || !locPbjs.que) {
+            makePrebidHappen();
+          } else {
+            locPbjs.que.push(makePrebidHappen);
+          }
+        }
+
+        function recursivePrebidCheck() {
+          if (chbRequests.length > 0) {
+            var currentRequest = chbRequests[0];
+            prebidCaller(currentRequest.prebidAdUnits, currentRequest.adnRequest, currentRequest.config, currentRequest.reqId);
+          }
+        }
+
+        function prebidCaller(prebidAdUnits, adnRequest, config, pReqId) {
           if (!adn.util.isArray(adnRequest.adUnits)) {
             adn.out.output("Need to supply an array of Adnuntius ad units", "headerBid", adnRequest);
           }
 
-          var pbjs = win.pbjs || {};
+          var reqId = pReqId || misc.uuid();
+          if (!getChbRequest(reqId)) {
+            chbRequests.push({
+              reqId: reqId,
+              prebidAdUnits: prebidAdUnits,
+              adnRequest: adnRequest,
+              config: config
+            });
+          }
+
+          // if no prebid ad units, shortcut to sending the request to Adnuntius ad server
+          if (!prebidAdUnits || !adn.util.isArray(prebidAdUnits) || prebidAdUnits.length < 1) {
+            initAdserver({}, adnRequest, config, reqId);
+            recursivePrebidCheck();
+            return;
+          }
+
+          if (chbRequests.length > 1 && !adn.util.isString(pReqId)) {
+            return;
+          }
+
+          win.pbjs = win.pbjs || {};
+          var pbjs = win.pbjs;
           pbjs.que = pbjs.que || [];
 
+          var prebidLoadTimeout = null;
+
+          // in case PBJS doesn't load
+          prebidLoadTimeout = win.setTimeout(function() {
+            initAdserver(pbjs, adnRequest, config, reqId, true);
+            recursivePrebidCheck();
+          }, PBJS_LOAD_FAILSAFE_TIMEOUT);
+
           pbjs.que.push(function() {
+
+            if (prebidLoadTimeout) {
+              win.clearTimeout(prebidLoadTimeout);
+            }
+            if (!getChbRequest(reqId)) {
+              adn.out.output("Prebid script loading probably timed out and only now has prebid loaded, which is after the ad request has passed through to Adnuntius", "headerBid", chbRequests);
+              return;
+            }
+
             // empty parameters clears all existing ad units before call
             pbjs.removeAdUnit();
-
             if (config) {
               pbjs.setConfig(config);
             }
 
-            pbjs.addAdUnits(adUnits);
+            pbjs.addAdUnits(prebidAdUnits);
 
             pbjs.requestBids({
               bidsBackHandler: function() {
-                initAdserver(pbjs, adnRequest, config);
+                initAdserver(pbjs, adnRequest, config, reqId);
+                recursivePrebidCheck();
               },
               timeout: PREBID_TIMEOUT
             });
           });
+        }
 
-          chbRequestCounts++;
-
-          // in case PBJS doesn't load
-          win.setTimeout(function() {
-            initAdserver(pbjs, adnRequest, config, true);
-          }, PBJS_LOAD_FAILSAFE_TIMEOUT);
+        return function(prebidAdUnits, adnRequest, config) {
+          prebidCaller(prebidAdUnits, adnRequest, config);
         };
       })();
 
@@ -3769,19 +3794,27 @@ try {
         var locs = adn.lib.getAdnDataLocs(args);
         var serverUrl = locs[config.locKey];
         serverUrl += misc.encodeAsUrlParams(cookies.getEuConsentAsObj() || {}, true);
+        serverUrl += misc.encodeAsUrlParams(cookies.getAdnConsentAsObj() || {}, true);
+        var postedData;
+        if (config.pick.length) {
+          var qArgs = misc.copyArgValues({}, args, config.pick) || {};
+          if (config.method === 'POST') {
+            postedData = JSON.stringify(qArgs);
+          } else {
+            serverUrl += misc.encodeAsUrlParams(qArgs, true);
+          }
+        }
         var ajax = adn.util.getNewAjax(config.method, serverUrl, adn.util.isFunction(cb) ? function() {
           cb(ajax);
         } : null);
         ajax.withCredentials = !misc.isTestAddress(locs[config.locKey]);
-
-        var postedData = config.pick.length ? JSON.stringify(misc.copyArgValues({}, args, config.pick)) : undefined;
         ajax.send(postedData);
       };
 
       adn.getSegments = function(folderId, aArgs) {
         adnDataRequest(folderId, aArgs, {
           method: "GET",
-          pick: ["browserId", "folderId"],
+          pick: ["uui"],
           locKey: 'user'
         }, function(ajax) {
           if (ajax.readyState && ajax.readyState !== 4) {
@@ -3791,7 +3824,30 @@ try {
             var jsonResponse = {};
             try {
               jsonResponse = JSON.parse(ajax.responseText);
-            } catch (e) {
+            } catch(e) {
+              return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
+            }
+            if (adn.util.isFunction(aArgs.onResponse)) {
+              aArgs.onResponse(jsonResponse);
+            }
+          }
+        });
+      };
+
+      adn.getGlobalId = function(folderId, aArgs) {
+        adnDataRequest(folderId, aArgs, {
+          method: "GET",
+          pick: ["browserId", "folderId"],
+          locKey: 'id'
+        }, function(ajax) {
+          if (ajax.readyState && ajax.readyState !== 4) {
+            return false;
+          }
+          if ((!ajax.status || ajax.status === 200) && adn.util.isNotBlankString(ajax.responseText)) {
+            var jsonResponse = {};
+            try {
+              jsonResponse = JSON.parse(ajax.responseText);
+            } catch(e) {
               return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
             }
             if (adn.util.isFunction(aArgs.onResponse)) {
@@ -3815,8 +3871,8 @@ try {
 
       adn.view = function(folderId, aArgs) {
         adnDataRequest(folderId, aArgs, {
-          method: "GET",
-          pick: [],
+          method: "POST",
+          pick: ["categories", "keywords", "domainName"],
           locKey: 'page'
         });
       };
@@ -3846,7 +3902,7 @@ try {
         }
         adnDataRequest(folderId, aArgs, {
           method: "POST",
-          pick: ['externalSystemType', 'externalSystemUserId'],
+          pick: ['externalSystemType', 'externalSystemUserId', 'browserId'],
           locKey: 'sync'
         });
       };
@@ -3912,14 +3968,14 @@ try {
       var executeCalls = function() {
         try {
           var call;
-          while ((call = adn.calls.shift())) {
+          while((call = adn.calls.shift())) {
             try {
               call();
-            } catch (e) {
+            } catch(e) {
               adn.out.output(e, "executeCalls: inside while catch block", call, adn.calls);
             }
           }
-        } catch (e) {
+        } catch(e) {
           adn.out.output(e, "executeCalls: outside while catch block", adn.calls);
         }
       };
@@ -3932,6 +3988,6 @@ try {
       };
     })();
   })(adn, document, window);
-} catch (e) {
+} catch(e) {
   adn.out.output(e, "Blanket catch block");
 }
