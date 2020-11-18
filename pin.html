@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Pin Payments Should Fail</title>
+</head>
+<p>This Pin Payments card should fail but it doesn't.</p>
+<hr>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<textarea cols="50" rows="20" id="response"></textarea>
+<script>
+  $.ajax({
+    url: "https://test-api.pinpayments.com/1/cards.json?callback=?",
+    dataType: "jsonp",
+    data: {
+      _method: 'POST',
+      publishable_api_key: 'pk_A5uo0_qhsBkBt2YP0g4HRw',
+      number: "4700000000000005",
+      expiry_month: 12,
+      expiry_year: 2021,
+      cvc: 123,
+      name: "George Jones",
+      address_line1: "12 Something Street",
+      address_city: "Jakarta",
+      address_country: "Indonesia"
+      // Other API parameters go here
+    },
+    success: function(response) {
+      // Response handling goes here
+      document.getElementById("response").value = JSON.stringify(response);
+    }
+  });
+</script>
+
+</body>
+</html>
