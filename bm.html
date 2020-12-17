@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brand Mammoth Example Page</title>
+</head>
+<body><h3>An Example Page Showing Ads from Adnuntius</h3>
+<h4>First Ad</h4>
+<div id="adn-00000000000d9e29" style="display: none"></div>
+<hr>
+<h4>Second Ad</h4>
+<div id="adn-00000000000d9e29" style="display: none"></div>
+<hr>
+<h4>Third Ad</h4>
+<div id="adn-00000000000d9e29" style="display: none"></div>
+
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({ adUnits: [
+      { auId: '00000000000d9e29', auW: '500', auH: '500' },
+      { auId: '00000000000d9e29', targetId: 'secondSpace' auW: '500', auH: '500' },
+      { auId: '00000000000d9e29', targetId: 'thirdSpace' auW: '500', auH: '500' },      
+   ]});
+});
+</script>
+
+
+</body>
+</html>
