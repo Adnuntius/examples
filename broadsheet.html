@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Example for AdSparc and Broadsheet</title>
+</head>
+<body><h3>Example for AdSparc and Broadsheet</h3>
+<hr>
+<p><small>Ad Request for Broadsheet ad unit at <a href="https://admin.adnuntius.com/ad-units/ad-unit/1sqf12yk37yh3kx2">https://admin.adnuntius.com/ad-units/ad-unit/1sqf12yk37yh3kx2</a>.</small></p>
+<div id="adn-00000000000e019c" style="display: none"></div>
+<hr>
+<p><small>Ad Request for Broadsheet ad unit 2 at <a href="https://admin.adnuntius.com/ad-units/ad-unit/rsyp2ytws0889mcg">https://admin.adnuntius.com/ad-units/ad-unit/rsyp2ytws0889mcg</a>.</small></p>
+<div id="adn-00000000000e019d" style="display: none"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({ adUnits: [
+      { auId: '00000000000e019c', auW: '400', auH: '400' },
+      { auId: '00000000000e019d', auW: '400', auH: '400' }
+   ]});
+});
+</script>
+</body>
+</html>
