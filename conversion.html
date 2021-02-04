@@ -18,7 +18,7 @@ window.adn = window.adn || {}; adn.calls = adn.calls || [];
 adn.calls.push(function() {
   adn.useLocalStorage(false);
    adn.request({ adUnits: [
-      { useCookies: false, isolateFrame: true, auId: '00000000000353f5', auW: '10000', auH: '10000', kv: { 'test': ['conversion'] } }
+      { useCookies: true, auId: '00000000000353f5', auW: '10000', auH: '10000', kv: { 'test': ['conversion'] } }
    ]});
 });
 }
