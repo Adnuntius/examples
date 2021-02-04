@@ -8,8 +8,12 @@
 <hr>
 <p><small>Ad request: auId = 00000000000353f5</small></p>
 <div id="adn-00000000000353f5" style="display: none"></div>
+<hr>  
+
+  
 <script src="https://cdn.adnuntius.com/adn.js" async></script>
-<script>
+<script type="text/javascript">
+function getAds() {
 window.adn = window.adn || {}; adn.calls = adn.calls || [];
 adn.calls.push(function() {
   adn.useLocalStorage(false);
@@ -17,6 +21,12 @@ adn.calls.push(function() {
       { useCookies: false, isolateFrame: true, auId: '00000000000353f5', auW: '10000', auH: '10000', kv: { 'test': ['conversion'] } }
    ]});
 });
+}
+function convert() {
+  document.write("<img src=\"https://delivery.adnuntius.com/pixelc.gif?eventType=ps3q0xmvf0wvc8rr&cb=" + Math.random() + "\">");
+}
 </script>
+<button onclick="getAds()">Get Ad</button>
+<button onclick="convert()">Convert</button>
 </body>
 </html>
