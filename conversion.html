@@ -23,7 +23,8 @@ adn.calls.push(function() {
 });
 }
 function convert() {
-  document.write("<img src=\"https://delivery.adnuntius.com/pixelc.gif?eventType=ps3q0xmvf0wvc8rr&cb=" + Math.random() + "\">");
+  var image = new Image();
+  image.src = "https://delivery.adnuntius.com/pixelc.gif?eventType=ps3q0xmvf0wvc8rr&cb=" + Math.random();
 }
 </script>
 <button onclick="getAds()">Get Ad</button>
