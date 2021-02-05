@@ -16,7 +16,7 @@
 function getAds() {
 window.adn = window.adn || {}; adn.calls = adn.calls || [];
 adn.calls.push(function() {
-  adn.useLocalStorage(false);
+  adn.useLocalStorage(true);
    adn.request({ adUnits: [
       { useCookies: true, auId: '00000000000353f5', auW: '10000', auH: '10000', kv: { 'test': ['conversion'] } }
    ]});
@@ -30,9 +30,17 @@ function convertAdvertiser() {
   var image = new Image();
   image.src = "https://delivery.adnuntius.com/pixelc.gif?adSource=example.com&eventType=ps3q0xmvf0wvc8rr&cb=" + Math.random();
 }
+function convertAdnJs() {
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.useLocalStorage(true);
+   adn.regConversion({eventType: 'ps3q0xmvf0wvc8rr', adSource: 'example.com'});
+});
+}
 </script>
 <button onclick="getAds()">Get Ad</button>
 <button onclick="convertLineItem()">Convert line-item</button>
 <button onclick="convertAdvertiser()">Convert advertiser</button>
+<button onclick="convertAdnJs()">Convert adn.js</button>
 </body>
 </html>
