@@ -22,12 +22,17 @@ adn.calls.push(function() {
    ]});
 });
 }
-function convert() {
+function convertLineItem() {
   var image = new Image();
   image.src = "https://delivery.adnuntius.com/pixelc.gif?network=adnuntius&adSource=c9m7rxwpf2xs73h1&eventType=ps3q0xmvf0wvc8rr&cb=" + Math.random();
 }
+function convertAdvertiser() {
+  var image = new Image();
+  image.src = "https://delivery.adnuntius.com/pixelc.gif?network=adnuntius&adSource=www.example.com&eventType=ps3q0xmvf0wvc8rr&cb=" + Math.random();
+}
 </script>
 <button onclick="getAds()">Get Ad</button>
-<button onclick="convert()">Convert</button>
+<button onclick="convertLineItem()">Convert line-item</button>
+<button onclick="convertAdvertiser()">Convert advertiser</button>
 </body>
 </html>
