@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="icon" type="image/png" href="/favicon.png">
+          <script async src="http://localhost:8001/adn.src.js"></script>
+        <script src="http://acdn.adnxs.com/prebid/not-for-prod/1/prebid.js"></script>
+        <script>
+            var div_1_sizes = [
+                [300, 250],
+                [300, 600]
+            ];
+
+            var adUnits = [
+                {
+                    code: 'hb',
+                    mediaTypes: {
+                        banner: {
+                            sizes: div_1_sizes
+                        }
+                    },
+                    bids: [{
+                        bidder: 'appnexus',
+                        params: {
+                            placementId: 13144370
+                        }
+                    }]
+                },
+              {
+                code: "000000000000009d",
+                mediaTypes: {
+                  banner: {
+                    sizes: [[980, 360], [980, 300], [980, 240], [980, 120]]
+                  }
+                },
+                bids: [
+                  {
+                    bidder: "adnuntius",
+                    params: {
+                      auId: "00000000000432e3",
+                      network: "adnuntius",
+                      targeting: {
+                        kv: { 'isolate': ['chbTest'] }
+                      }
+                    }
+                  }
+                ]
+              }
+            ];
+
+            // ======== DO NOT EDIT BELOW THIS LINE =========== //
+    // ======== DO NOT EDIT BELOW THIS LINE =========== //
+    window.adn = window.adn || {};
+    adn.calls = adn.calls || [];
+
+    var adnRequestInfo = {adUnits: [{auId: '00000000000eb5c1', targetId: 'hb', auW: 300, auH: 250}]}
+
+    adn.calls.push(function() {
+      adn.chbRequest(adUnits, adnRequestInfo, {
+        debug: true
+      })
+    });
+
+        </script>
+
+    </head>
+
+    <body>
+        <h2>Basic Prebid.js Example</h2>
+        <h5>Div-1</h5>
+        <div id='hb'>
+        </div>
+
+    </body>
+
+</html>
