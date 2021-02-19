@@ -31,11 +31,14 @@ function updateProfile(field, value) {
 
 <script type="text/javascript">
 function getAds() {
+    window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() { adn.request({ env: 'dev', uui: 'test', userId: adn.getBrowserId(), siteId: '0000000000000093', adUnits: [ {auId: '0000000000000092', auW: 200, auH: 50 } ]});});
+    
     adn.getGlobalId('0000000000000093', {
         env: 'dev',
         protocol: 'http',
         onResponse: function(data) {
             uui = data.uui || '';
+            console.log(uii);
             adn.getSegments('0000000000000093', {
                 env: 'dev',
                 protocol: 'http',
@@ -55,7 +58,6 @@ function getAds() {
             console.log({siteSegments: segments});
         }
     });
-    window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() { adn.request({ env: 'dev', uui: 'test', userId: adn.getBrowserId(), siteId: '0000000000000093', adUnits: [ {auId: '0000000000000092', auW: 200, auH: 50 } ]}); });
 }
 </script>
 <button onclick="getAds()">Get Ad</button>
