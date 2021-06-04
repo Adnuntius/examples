@@ -43,63 +43,37 @@ function updateProfile(browserId, folderId, field, value) {
 
 <script type="text/javascript">
 function getSegments(browserId) {
-    adn.getGlobalId('0000000000000093', {
-        env: 'dev',
-        browserId: browserId,
-        protocol: 'http',
-        onResponse: function(data) {
-            let uui = data.uui || '';
-            console.log(uui);
-            adn.getSegments('0000000000000093', {
-                env: 'dev',
-                protocol: 'http',
-                uui: uui,
-                onResponse: function(data) {
-                    segments = data.segments || [];
-                    console.log({folder: '0000000000000093', globalSegments: segments});
-                }
-            });
-        }
+    let folderIds = ['0000000000000093', '000000000000009e'];
+    
+    folderIds.forEach(function(folderId) {
+        console.log('Folder: ' + folderId +'; Browser: ' + browserId);
+        adn.getGlobalId(folderId, {
+            env: 'dev',
+            browserId: browserId,
+            protocol: 'http',
+            onResponse: function(data) {
+                let uui = data.uui || '';
+                adn.getSegments(folderId, {
+                    env: 'dev',
+                    protocol: 'http',
+                    uui: uui,
+                    onResponse: function(data) {
+                        segments = data.segments || [];
+                        console.log('Global Segments in folder ' + folderId + ': ' + segments);
+                    }
+                });
+            }
+        });
+        adn.getSegments(folderId, {
+            env: 'dev',
+            browserId: browserId,
+            protocol: 'http',
+            onResponse: function(data) {
+                segments = data.segments || [];
+                console.log('Folder Segments in folder ' + folderId + ':' + segments);
+            }
+        });
     });
-
-    adn.getGlobalId('000000000000009e', {
-        env: 'dev',
-        browserId: browserId,
-        protocol: 'http',
-        onResponse: function(data) {
-            let uui = data.uui || '';
-            adn.getSegments('000000000000009e', {
-                env: 'dev',
-                protocol: 'http',
-                uui: uui,
-                onResponse: function(data) {
-                    segments = data.segments || [];
-                    console.log({folder: '000000000000009e', globalSegments: segments});
-                }
-            });
-        }
-    });
-
-    adn.getSegments('0000000000000093', {
-        env: 'dev',
-        browserId: browserId,
-        protocol: 'http',
-        onResponse: function(data) {
-            segments = data.segments || [];
-            console.log({folder: '0000000000000093', segments: segments});
-        }
-    });
-
-    adn.getSegments('000000000000009e', {
-        env: 'dev',
-        browserId: browserId,
-        protocol: 'http',
-        onResponse: function(data) {
-            segments = data.segments || [];
-            console.log({folder: '000000000000009e', segments: segments});
-        }
-    });
-
 }
 </script>
 <button onclick="getSegments('abc')">Get Segments (browser ABC)</button>
