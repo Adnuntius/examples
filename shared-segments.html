@@ -11,8 +11,9 @@
 
 <script type="text/javascript">
 function updateProfile(folderId, field, value) {
+    document.cookie = "abnconsent=000000000000009e0000000000000093";
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
-        adn.visitor(folderId, {env: 'dev', protocol: 'http', profileValues: {[field]: value}, abnConsent: '000000000000009e0000000000000093'});
+        adn.visitor(folderId, {env: 'dev', protocol: 'http', profileValues: {[field]: value}});
     });
 }
 </script>
