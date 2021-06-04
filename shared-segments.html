@@ -43,10 +43,9 @@ function updateProfile(browserId, folderId, field, value) {
 
 <script type="text/javascript">
 function getSegments(browserId) {
-    let folderIds = ['0000000000000093', '000000000000009e'];
-    
+    console.log('Browser: ' + browserId);
+    let folderIds = ['0000000000000093', '000000000000009e'];    
     folderIds.forEach(function(folderId) {
-        console.log('Folder: ' + folderId +'; Browser: ' + browserId);
         adn.getGlobalId(folderId, {
             env: 'dev',
             browserId: browserId,
@@ -70,7 +69,7 @@ function getSegments(browserId) {
             protocol: 'http',
             onResponse: function(data) {
                 segments = data.segments || [];
-                console.log('Folder Segments in folder ' + folderId + ':' + segments);
+                console.log('Segments in folder ' + folderId + ':' + segments);
             }
         });
     });
