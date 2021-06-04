@@ -12,15 +12,21 @@
 <script type="text/javascript">
 function updateProfile(folderId, field, value) {
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
-        adn.visitor(folderId, {env: 'dev', protocol: 'http', profileValues: {[field]: value}});
+        adn.visitor(folderId, {env: 'dev', protocol: 'http', profileValues: {[field]: value}, abnConsent: '000000000000009e0000000000000093'});
     });
 }
 </script>
+
+<h3>Folder 93</h3>    
+
 <button onclick="updateProfile('93', 'firstName', 'Richard')">Name = Richard (Folder 93)</button>
 <button onclick="updateProfile('93', 'firstName', 'Bruce')">Name = Bruce (Folder 93)</button>
 <button onclick="updateProfile('93', 'firstName', '')">Clear Name (Folder 93)</button>
 <button onclick="updateProfile('93', 'emailPrivate', 'richard@email.com')">Email = richard@email.com (Folder 93)</button>
 <button onclick="updateProfile('93', 'emaiiPrivate', 'bruce@email.com')">Email = bruce@email.com (Folder 93)</button>
+
+<h3>Folder 93</h3>    
+
 <button onclick="updateProfile('9e', 'firstName', 'Richard')">Name = Richard (Folder 9E)</button>
 <button onclick="updateProfile('9e', 'firstName', 'Bruce')">Name = Bruce (Folder 9E)</button>
 <button onclick="updateProfile('9e', 'firstName', '')">Clear Name (Folder 9E)</button>
