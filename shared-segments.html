@@ -67,6 +67,7 @@ function getSegments(browserId) {
         browserId: browserId,
         protocol: 'http',
         onResponse: function(data) {
+            let uui = data.uui || '';
             adn.getSegments('000000000000009e', {
                 env: 'dev',
                 protocol: 'http',
