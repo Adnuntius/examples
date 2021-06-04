@@ -55,7 +55,7 @@ function getSegments(browserId) {
                 uui: uui,
                 onResponse: function(data) {
                     segments = data.segments || [];
-                    console.log({folder: ''0000000000000093', globalSegments: segments});
+                    console.log({folder: '0000000000000093', globalSegments: segments});
                 }
             });
             adn.getSegments('000000000000009e', {
@@ -64,7 +64,7 @@ function getSegments(browserId) {
                 uui: uui,
                 onResponse: function(data) {
                     segments = data.segments || [];
-                    console.log({folder: ''000000000000009e', globalSegments: segments});
+                    console.log({folder: '000000000000009e', globalSegments: segments});
                 }
             });
         }
@@ -75,7 +75,7 @@ function getSegments(browserId) {
         protocol: 'http',
         onResponse: function(data) {
             segments = data.segments || [];
-            console.log({folder: ''0000000000000093', segments: segments});
+            console.log({folder: '0000000000000093', segments: segments});
         }
     });
 
@@ -84,7 +84,7 @@ function getSegments(browserId) {
         protocol: 'http',
         onResponse: function(data) {
             segments = data.segments || [];
-            console.log({folder: ''000000000000009e', segments: segments});
+            console.log({folder: '000000000000009e', segments: segments});
         }
     });
 
