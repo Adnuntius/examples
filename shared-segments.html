@@ -10,29 +10,29 @@
 <script type="text/javascript" src="https://cdn.adnuntius.com/adn.js" async></script>
 
 <script type="text/javascript">
-function updateProfile(folderId, field, value) {
+function updateProfile(browserId, folderId, field, value) {
     document.cookie = "abnconsent=000000000000009e0000000000000093";
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
-        adn.visitor(folderId, {env: 'dev', protocol: 'http', profileValues: {[field]: value}});
+        adn.visitor(folderId, {browserId: browserid, env: 'dev', protocol: 'http', profileValues: {[field]: value}});
     });
 }
 </script>
 
-<h3>Folder 93</h3>    
+<h3>User ABC, Folder 93</h3>    
 
-<button onclick="updateProfile('93', 'firstName', 'Richard')">Name = Richard (Folder 93)</button>
-<button onclick="updateProfile('93', 'firstName', 'Bruce')">Name = Bruce (Folder 93)</button>
-<button onclick="updateProfile('93', 'firstName', '')">Clear Name (Folder 93)</button>
-<button onclick="updateProfile('93', 'emailPrivate', 'richard@email.com')">Email = richard@email.com (Folder 93)</button>
-<button onclick="updateProfile('93', 'emaiiPrivate', 'bruce@email.com')">Email = bruce@email.com (Folder 93)</button>
+<button onclick="updateProfile('abc', '93', 'firstName', 'Richard')">Name = Richard (Folder 93)</button>
+<button onclick="updateProfile('abc', '93', 'firstName', 'Bruce')">Name = Bruce (Folder 93)</button>
+<button onclick="updateProfile('abc', '93', 'firstName', '')">Clear Name (Folder 93)</button>
+<button onclick="updateProfile('abc', '93', 'emailPrivate', 'richard@email.com')">Email = richard@email.com (Folder 93)</button>
+<button onclick="updateProfile('abc', '93', 'emaiiPrivate', 'bruce@email.com')">Email = bruce@email.com (Folder 93)</button>
 
-<h3>Folder 93</h3>    
+<h3>User XYZ, Folder 9E</h3>    
 
-<button onclick="updateProfile('9e', 'firstName', 'Richard')">Name = Richard (Folder 9E)</button>
-<button onclick="updateProfile('9e', 'firstName', 'Bruce')">Name = Bruce (Folder 9E)</button>
-<button onclick="updateProfile('9e', 'firstName', '')">Clear Name (Folder 9E)</button>
-<button onclick="updateProfile('9e', 'emailPrivate', 'richard@email.com')">Email = richard@email.com (Folder 9E)</button>
-<button onclick="updateProfile('9e', 'emaiiPrivate', 'bruce@email.com')">Email = bruce@email.com (Folder 9E)</button>
+<button onclick="updateProfile('xyz', '9e', 'firstName', 'Richard')">Name = Richard (Folder 9E)</button>
+<button onclick="updateProfile('xyz', '9e', 'firstName', 'Bruce')">Name = Bruce (Folder 9E)</button>
+<button onclick="updateProfile('xyz', '9e', 'firstName', '')">Clear Name (Folder 9E)</button>
+<button onclick="updateProfile('xyz', '9e', 'emailPrivate', 'richard@email.com')">Email = richard@email.com (Folder 9E)</button>
+<button onclick="updateProfile('xyz', '9e', 'emaiiPrivate', 'bruce@email.com')">Email = bruce@email.com (Folder 9E)</button>
 
 
 <!-- Ad Tag -->
@@ -41,7 +41,7 @@ function updateProfile(folderId, field, value) {
 <hr>
 
 <script type="text/javascript">
-function getSegments(folderId) {
+function getSegments(browserId) {
     console.log({folderId: folderId});
     adn.getGlobalId(folderId, {
         env: 'dev',
@@ -55,23 +55,43 @@ function getSegments(folderId) {
                 uui: uui,
                 onResponse: function(data) {
                     segments = data.segments || [];
-                    console.log({globalSegments: segments});
+                    console.log({folder: ''0000000000000093', globalSegments: segments});
+                }
+            });
+            adn.getSegments('000000000000009e', {
+                env: 'dev',
+                protocol: 'http',
+                uui: uui,
+                onResponse: function(data) {
+                    segments = data.segments || [];
+                    console.log({folder: ''000000000000009e', globalSegments: segments});
                 }
             });
         }
     });
-    adn.getSegments(folderId, {
+    
+    adn.getSegments('0000000000000093', {
         env: 'dev',
         protocol: 'http',
         onResponse: function(data) {
             segments = data.segments || [];
-            console.log({siteSegments: segments});
+            console.log({folder: ''0000000000000093', segments: segments});
         }
     });
+
+    adn.getSegments('000000000000009e', {
+        env: 'dev',
+        protocol: 'http',
+        onResponse: function(data) {
+            segments = data.segments || [];
+            console.log({folder: ''000000000000009e', segments: segments});
+        }
+    });
+
 }
 </script>
-<button onclick="getSegments('0000000000000093')">Get Segments (folder 93)</button>
-<button onclick="getSegments('000000000000009e')">Get Segments (folder 9E)</button>
+<button onclick="getSegments('abc')">Get Segments (browser ABC)</button>
+<button onclick="getSegments('xyz')">Get Segments (browser XYZ)</button>
 
 
 </body>
