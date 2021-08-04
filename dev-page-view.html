@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Adnuntius Data: Dev Page Views</title>
+</head>
+<body><h3>Adnuntius Data: Dev Page Views</h3>
+<hr>
+<script type="text/javascript" src="https://cdn.adnuntius.com/adn.js" async></script>
+
+<script type="text/javascript">
+function updateProfile(folderId, field, value) {
+    window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
+        adn.visitor(folderId, {env: 'dev', profileValues: {[field]: value}});
+        adn.view(folderId, {
+                    env: 'dev',
+                    keywords: ["sport", "tennis", "oslo", "summer"],
+                    categories: ["IAB_24_44"],
+                    domainName: "sports.no"
+        });
+    });
+}
+</script>
+
+<button onclick="updateProfile('93', 'firstName', 'Richard')">Name = Richard</button>
+<button onclick="updateProfile('93', 'firstName', 'Bruce')">Name = Bruce</button>
+<button onclick="updateProfile('93', 'firstName', '')">Clear Name</button>
+
+<script type="text/javascript">
+function getSegments() {
+        adn.getSegments('0000000000000093', {
+            env: 'dev',
+            onResponse: function(data) {
+                segments = data.segments || [];
+                console.log('Segments in folder ' + folderId + ':' + segments);
+            }
+        });
+}
+</script>
+<button onclick="getSegments()">Get Segments</button>
+
+</body>
+</html>
