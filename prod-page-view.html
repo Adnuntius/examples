@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Adnuntius Data: Page Views</title>
+</head>
+<body><h3>Adnuntius Data: Page Views</h3>
+<hr>
+<script type="text/javascript" src="https://cdn.adnuntius.com/adn.js" async></script>
+
+<script type="text/javascript">
+function updateProfile(field, value) {
+    window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
+        adn.visitor('8d359', {profileValues: {[field]: value}});
+        adn.view('8d359', {
+                    keywords: ["sport", "tennis", "oslo", "summer"],
+                    categories: ["IAB_24_44"],
+                    domainName: "sports.no"
+        });
+    });
+}
+</script>
+
+<button onclick="updateProfile('firstName', 'Richard')">Name = Richard</button>
+<button onclick="updateProfile('firstName', 'Bruce')">Name = Bruce</button>
+<button onclick="updateProfile('firstName', '')">Clear Name</button>
+
+<script type="text/javascript">
+function getSegments() {
+        adn.getSegments('8d359', {
+            onResponse: function(data) {
+                segments = data.segments || [];
+                console.log('Segments:' + segments);
+            }
+        });
+}
+</script>
+<button onclick="getSegments()">Get Segments</button>
+
+</body>
+</html>
