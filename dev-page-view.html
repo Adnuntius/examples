@@ -32,7 +32,7 @@ function getSegments() {
             env: 'dev',
             onResponse: function(data) {
                 segments = data.segments || [];
-                console.log('Segments in folder ' + folderId + ':' + segments);
+                console.log('Segments:' + segments);
             }
         });
 }
