@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body><h3>Live Preview Example</h3>
+<hr>
+<div id="adn-00000000000432e3" class='fred' style="display: none"></div>
+<div class='fred3' style="display: none"></div>
+<div class='fred2' style="display: none"></div>
+<script src="http://cdn.adnuntius.com/adn.src.js" async></script>
+<script>
+  window.adn = window.adn || {}; adn.calls = adn.calls || [];
+  adn.calls.push(function() {
+    adn.request({ adUnits: [
+        { auId: '00000000000432e3', targetClass: 'fred', auW: 10000, auH: 10000, kv: { 'isolate': ['inscreen'] } },
+        { auId: '0000000000000072', targetClass: 'fred3'},
+        { auId: '00000000000432e3', targetClass: 'fred2', auW: 10000, auH: 10000, kv: { 'isolate': ['serverside'] } }
+      ]});
+  });
+</script>
+</body>
+</html>
