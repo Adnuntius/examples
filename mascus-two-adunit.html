@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body><h3>Adnuntius Ad Tag Generator and Tester</h3>
+<hr>
+<p><small>Ad request: auId = 00000000000553a3</small></p>
+<div id="adn-00000000000553a3" style="display: none"></div>
+<hr>
+<p><small>Ad request: auId = 00000000000553aa</small></p>
+<div id="adn-00000000000553aa" style="display: none"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({ adUnits: [
+      { auId: '00000000000553a3', kv: { 'categ3': ['agriculture'] } },
+      { auId: '00000000000553aa', kv: { 'categ3': ['agriculture'] } }
+   ]});
+});
+</script>
+</body>
+</html>
