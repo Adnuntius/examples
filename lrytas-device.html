@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body><h3>Adnuntius Ad Tag Generator and Tester</h3>
+<hr>
+<h4>Lrytas Ad Unit</h4>
+<p><small>Ad request: auId = 000000000004ef6a</small></p>
+<div id="adn-000000000004ef6a" style="display: none"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({ adUnits: [
+      { auId: '000000000004ef6a', auW: '1000', auH: '1000' }
+   ]});
+});
+</script>
+</body>
+</html>
