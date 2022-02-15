@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body><h3>Preview Doesn't Work</h3>
+
+<h4>Sad Preview</h4>
+<div id="previewThis"></div>
+<script async src="http://localhost:8001/adn.src.js"></script>
+<script>
+  window.adn = window.adn || {}; adn.calls = adn.calls || [];
+  adn.calls.push(function() {
+
+    adn.preview({
+      networkId: "da_trippers",
+      creatives: [{
+        creativeData: {
+          creativeWidth: 980,
+          creativeHeight: 300,
+          layoutParameters: {
+            Image: {id: "l6pstjcqxvtyjxcp"},
+            destination: "http://theage.com.au"
+          },
+          layoutId: "da_trippers_image_layout_1"
+        },
+        targetId: "previewThis"
+      }]
+    });
+
+  });
+</script>
+</body>
+</html>
