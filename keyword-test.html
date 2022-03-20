@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="keywords" content="james, george, smith">
+  <title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body><h3>Adnuntius Ad Tag Generator and Tester</h3>
+<hr>
+<p><small>Ad request: auId = 00000000000000a2</small></p>
+
+<div style="position: absolute;">
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BLAH</h1>
+  <h1>FRED</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <h1>BALH</h1>
+  <div id="adn-00000000000000a2" style="display: none; position: fixed;top:0"></div>
+</div>
+<hr>
+<div id="fred" style="display: none"></div>
+<hr>
+<div id="fred2" style="display: none"></div>
+<script async src="http://localhost:8001/adn.src.js"></script>
+<h1>INDEX</h1>
+<script>
+  window.adn = window.adn || {};
+  adn.calls = adn.calls || [];
+  adn.calls.push(function() {
+    adn.request({
+      env: 'localhost', adUnits: [
+        {auId: '00000000000000a2', auW: '728', auH: '90', kv: [{isolate: 'one'}], refresh: {delay: 5, count: 10}}
+      ]
+    });
+  });
+</script>
+</body>
+</html>
