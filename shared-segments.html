@@ -37,19 +37,16 @@ function updateProfile(browserId, folderId, field, value) {
 
 
 <script type="text/javascript">
-window.adn = window.adn || {}; adn.calls = adn.calls || [];
 function getSegments(browserId) {
-    adn.calls.push(function() {
-        console.log('Browser: ' + browserId);
-        let folderIds = ['8d2ad', '8d359'];    
-        folderIds.forEach(function(folderId) {
-            adn.getSegments(folderId, {
-                browserId: browserId,
-                onResponse: function(data) {
-                    segments = data.segments || [];
-                    console.log('Segments in folder ' + folderId + ':' + segments);
-                }
-            });
+    console.log('Browser: ' + browserId);
+    let folderIds = ['8d2ad', '8d359'];    
+    folderIds.forEach(function(folderId) {
+        adn.getSegments(folderId, {
+            browserId: browserId,
+            onResponse: function(data) {
+                segments = data.segments || [];
+                console.log('Segments in folder ' + folderId + ':' + segments);
+            }
         });
     });
 }
