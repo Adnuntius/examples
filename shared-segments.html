@@ -11,7 +11,7 @@
 
 <script type="text/javascript">
 function updateProfile(browserId, folderId, field, value) {
-    document.cookie = "abnconsent=000000000000009e0000000000000093";
+    document.cookie = "abnconsent=8d2adg8d359";
     document.cookie = "browserId=" + browserId;
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
         adn.visitor(folderId, {browserId: browserId, env: 'dev', protocol: 'http', profileValues: {[field]: value}});
@@ -19,21 +19,21 @@ function updateProfile(browserId, folderId, field, value) {
 }
 </script>
 
-<h3>User ABC, Folder 93</h3>    
+<h3>User ABC, Folder Adnuntius</h3>    
 
-<button onclick="updateProfile('abc', '93', 'firstName', 'Richard')">Name = Richard</button>
-<button onclick="updateProfile('abc', '93', 'firstName', 'Bruce')">Name = Bruce</button>
-<button onclick="updateProfile('abc', '93', 'firstName', '')">Clear Name</button>
-<button onclick="updateProfile('abc', '93', 'emailPrivate', 'richard@email.com')">Email = richard@email.com</button>
-<button onclick="updateProfile('abc', '93', 'emailPrivate', 'bruce@email.com')">Email = bruce@email.com</button>
+<button onclick="updateProfile('abc', '8d359', 'firstName', 'Richard')">Name = Richard</button>
+<button onclick="updateProfile('abc', '8d359', 'firstName', 'Bruce')">Name = Bruce</button>
+<button onclick="updateProfile('abc', '8d359', 'firstName', '')">Clear Name</button>
+<button onclick="updateProfile('abc', '8d359', 'emailPrivate', 'richard@email.com')">Email = richard@email.com</button>
+<button onclick="updateProfile('abc', '8d359', 'emailPrivate', 'bruce@email.com')">Email = bruce@email.com</button>
 
-<h3>User XYZ, Folder 9E</h3>    
+<h3>User XYZ, Folder Other</h3>    
 
-<button onclick="updateProfile('xyz', '9e', 'firstName', 'Richard')">Name = Richard</button>
-<button onclick="updateProfile('xyz', '9e', 'firstName', 'Bruce')">Name = Bruce</button>
-<button onclick="updateProfile('xyz', '9e', 'firstName', '')">Clear Name</button>
-<button onclick="updateProfile('xyz', '9e', 'emailPrivate', 'richard@email.com')">Email = richard@email.com</button>
-<button onclick="updateProfile('xyz', '9e', 'emailPrivate', 'bruce@email.com')">Email = bruce@email.com</button>
+<button onclick="updateProfile('xyz', '8d2ad', 'firstName', 'Richard')">Name = Richard</button>
+<button onclick="updateProfile('xyz', '8d2ad', 'firstName', 'Bruce')">Name = Bruce</button>
+<button onclick="updateProfile('xyz', '8d2ad', 'firstName', '')">Clear Name</button>
+<button onclick="updateProfile('xyz', '8d2ad', 'emailPrivate', 'richard@email.com')">Email = richard@email.com</button>
+<button onclick="updateProfile('xyz', '8d2ad', 'emailPrivate', 'bruce@email.com')">Email = bruce@email.com</button>
 
 
 <!-- Ad Tag -->
@@ -44,7 +44,7 @@ function updateProfile(browserId, folderId, field, value) {
 <script type="text/javascript">
 function getSegments(browserId) {
     console.log('Browser: ' + browserId);
-    let folderIds = ['0000000000000093', '000000000000009e'];    
+    let folderIds = ['8d2ad', '8d359'];    
     folderIds.forEach(function(folderId) {
         adn.getSegments(folderId, {
             env: 'dev',
