@@ -46,23 +46,6 @@ function getSegments(browserId) {
     console.log('Browser: ' + browserId);
     let folderIds = ['0000000000000093', '000000000000009e'];    
     folderIds.forEach(function(folderId) {
-        adn.getGlobalId(folderId, {
-            env: 'dev',
-            browserId: browserId,
-            protocol: 'http',
-            onResponse: function(data) {
-                let uui = data.uui || '';
-                adn.getSegments(folderId, {
-                    env: 'dev',
-                    protocol: 'http',
-                    uui: uui,
-                    onResponse: function(data) {
-                        segments = data.segments || [];
-                        console.log('Global Segments in folder ' + folderId + ': ' + segments);
-                    }
-                });
-            }
-        });
         adn.getSegments(folderId, {
             env: 'dev',
             browserId: browserId,
