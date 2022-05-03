@@ -14,7 +14,7 @@ function updateProfile(browserId, folderId, field, value) {
     document.cookie = "abnconsent=8d2adg8d359";
     document.cookie = "browserId=" + browserId;
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
-        adn.visitor(folderId, {browserId: browserId, env: 'dev', protocol: 'http', profileValues: {[field]: value}});
+        adn.visitor(folderId, {browserId: browserId, profileValues: {[field]: value}});
     });
 }
 </script>
@@ -36,20 +36,13 @@ function updateProfile(browserId, folderId, field, value) {
 <button onclick="updateProfile('xyz', '8d2ad', 'emailPrivate', 'bruce@email.com')">Email = bruce@email.com</button>
 
 
-<!-- Ad Tag -->
-<hr>    
-<div id="adn-0000000000000092" style="display:none"></div>
-<hr>
-
 <script type="text/javascript">
 function getSegments(browserId) {
     console.log('Browser: ' + browserId);
     let folderIds = ['8d2ad', '8d359'];    
     folderIds.forEach(function(folderId) {
         adn.getSegments(folderId, {
-            env: 'dev',
             browserId: browserId,
-            protocol: 'http',
             onResponse: function(data) {
                 segments = data.segments || [];
                 console.log('Segments in folder ' + folderId + ':' + segments);
