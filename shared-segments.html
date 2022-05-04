@@ -11,6 +11,11 @@
 
 <script type="text/javascript">
 function updateProfile(browserId, folderId, field, value) {
+    // The consent string is the two folderIds with a `g` character as a delimiter
+    // This means that the user has consented to share data between both folders.
+    // So if they have a user profile in both folders (this would usually be two
+    // different websites) and they registered a matching email address (or phone number)
+    // for both profiles, then their segments would be shared across both sites.
     document.cookie = "adnconsent=8d2adg8d359";
     document.cookie = "browserId=" + browserId;
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
@@ -21,17 +26,27 @@ function updateProfile(browserId, folderId, field, value) {
 
 <h3>User ABC, Folder Adnuntius (8d359)</h3>    
 
+<h4>Set profile properties, which with fire triggers to change segment membership</h4>    
+    
 <button onclick="updateProfile('abc', '8d359', 'firstName', 'Richard')">Name = Richard</button>
 <button onclick="updateProfile('abc', '8d359', 'firstName', 'Bruce')">Name = Bruce</button>
 <button onclick="updateProfile('abc', '8d359', 'firstName', '')">Clear Name</button>
+
+<h4>Set the email address, which is used to match (or not) with the profile in the other folder</h4>    
+
 <button onclick="updateProfile('abc', '8d359', 'emailPrivate', 'richard@email.com')">Email = richard@email.com</button>
 <button onclick="updateProfile('abc', '8d359', 'emailPrivate', 'bruce@email.com')">Email = bruce@email.com</button>
 
 <h3>User XYZ, Folder Other (8d2ad)</h3>    
 
+<h4>Set profile properties, which with fire triggers to change segment membership</h4>    
+
 <button onclick="updateProfile('xyz', '8d2ad', 'interest', 'Advertising')">Interest = Advertising</button>
 <button onclick="updateProfile('xyz', '8d2ad', 'interest', 'Privacy')">Interest = Privacy</button>
 <button onclick="updateProfile('xyz', '8d2ad', 'interest', '')">Clear Interest</button>
+    
+<h4>Set the email address, which is used to match (or not) with the profile in the other folder</h4>
+    
 <button onclick="updateProfile('xyz', '8d2ad', 'emailPrivate', 'richard@email.com')">Email = richard@email.com</button>
 <button onclick="updateProfile('xyz', '8d2ad', 'emailPrivate', 'bruce@email.com')">Email = bruce@email.com</button>
 
