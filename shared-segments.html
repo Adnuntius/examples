@@ -11,7 +11,7 @@
 
 <script type="text/javascript">
 function updateProfile(browserId, folderId, field, value) {
-    document.cookie = "abnconsent=8d2adg8d359";
+    document.cookie = "adnconsent=8d2adg8d359";
     document.cookie = "browserId=" + browserId;
     window.adn = window.adn || {}; adn.calls = adn.calls || []; adn.calls.push(function() {
         adn.visitor(folderId, {browserId: browserId, profileValues: {[field]: value}});
@@ -50,10 +50,14 @@ function getSegments(folderId, browserId) {
 </script>
 
 <h3>Fetch Segments (print to console)</h3>    
-   
+
+<h4>User ABC</h4>    
 <button onclick="getSegments('8d2ad', 'abc')">Get Segments (folder 8d2ad, browser ABC)</button>
-<button onclick="getSegments('8d2ad', 'xyz')">Get Segments (folder 8d2ad, browser XYZ)</button>
 <button onclick="getSegments('8d359', 'abc')">Get Segments (folder 8d359, browser ABC)</button>
+
+<h4>User XYZ</h4>    
+
+<button onclick="getSegments('8d2ad', 'xyz')">Get Segments (folder 8d2ad, browser XYZ)</button>
 <button onclick="getSegments('8d359', 'xyz')">Get Segments (folder 8d359, browser XYZ)</button>
 
 
