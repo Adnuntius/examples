@@ -19,7 +19,7 @@ function updateProfile(browserId, folderId, field, value) {
 }
 </script>
 
-<h3>User ABC, Folder Adnuntius</h3>    
+<h3>User ABC, Folder Adnuntius (8d359)</h3>    
 
 <button onclick="updateProfile('abc', '8d359', 'firstName', 'Richard')">Name = Richard</button>
 <button onclick="updateProfile('abc', '8d359', 'firstName', 'Bruce')">Name = Bruce</button>
@@ -27,7 +27,7 @@ function updateProfile(browserId, folderId, field, value) {
 <button onclick="updateProfile('abc', '8d359', 'emailPrivate', 'richard@email.com')">Email = richard@email.com</button>
 <button onclick="updateProfile('abc', '8d359', 'emailPrivate', 'bruce@email.com')">Email = bruce@email.com</button>
 
-<h3>User XYZ, Folder Other</h3>    
+<h3>User XYZ, Folder Other (8d2ad)</h3>    
 
 <button onclick="updateProfile('xyz', '8d2ad', 'firstName', 'Richard')">Name = Richard</button>
 <button onclick="updateProfile('xyz', '8d2ad', 'firstName', 'Bruce')">Name = Bruce</button>
@@ -37,25 +37,24 @@ function updateProfile(browserId, folderId, field, value) {
 
 
 <script type="text/javascript">
-function getSegments(browserId) {
+function getSegments(folderId, browserId) {
     console.log('Browser: ' + browserId);
-    let folderIds = ['8d2ad', '8d359'];    
-    folderIds.forEach(function(folderId) {
-        adn.getSegments(folderId, {
-            browserId: browserId,
-            onResponse: function(data) {
-                segments = data.segments || [];
-                console.log('Segments in folder ' + folderId + ':' + segments);
-            }
-        });
+    adn.getSegments(folderId, {
+        browserId: browserId,
+        onResponse: function(data) {
+            segments = data.segments || [];
+            console.log('Segments in folder ' + folderId + ':' + segments);
+        }
     });
 }
 </script>
 
 <h3>Fetch Segments (print to console)</h3>    
    
-<button onclick="getSegments('abc')">Get Segments (browser ABC)</button>
-<button onclick="getSegments('xyz')">Get Segments (browser XYZ)</button>
+<button onclick="getSegments('8d2ad', 'abc')">Get Segments (folder 8d2ad, browser ABC)</button>
+<button onclick="getSegments('8d2ad', 'xyz')">Get Segments (folder 8d2ad, browser XYZ)</button>
+<button onclick="getSegments('8d359', 'abc')">Get Segments (folder 8d359, browser ABC)</button>
+<button onclick="getSegments('8d359', 'xyz')">Get Segments (folder 8d359, browser XYZ)</button>
 
 
 </body>
