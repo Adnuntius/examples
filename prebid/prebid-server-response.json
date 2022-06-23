@@ -1,0 +1,27 @@
+{
+
+  "adUnits": [
+
+    {
+      "auId": "00000000000a74a4",
+      "targetId": "adn-00000000000a74a4",
+
+      "html": "\u003C!DOCTYPE html\u003E\n\u003Chtml\u003E\n\u003Chead\u003E\n    \u003Cmeta charset=\"utf-8\"\u003E\n    \u003Cstyle type=\"text/css\" media=\"all\"\u003E\n        html, body, .responseCtr {\n            margin: 0;\n            padding: 0;\n            outline: 0;\n            border: 0;\n            overflow: hidden;\n        }\n\n        .responseCtr {\n            display: inline-block;\n            line-height: 0;\n            vertical-align: top;\n        }\n\n        .responseCtr a {\n            line-height: 0;\n        }\n\n        .responseCtr *, .responseCtr a * {\n            line-height: normal;\n        }\n\n        .responseCtr .contentWrapperPerItem {\n            margin: 0;\n            padding: 0;\n            outline: 0;\n            border: 0;\n            display: inline-block;\n            line-height: 0;\n            vertical-align: top;\n        }\n\n        a img {\n            border: none;\n            outline: none;\n        }\n\n        img {\n            margin: 0;\n            padding: 0;\n        }\n\n        /* need this displayNone class to ensure images are preloaded for smooth transition */\n        img.displayNone {\n            position: absolute;\n            top: -99999px;\n            left: -99999px;\n        }\n\n        .contentWrapperTrailer {\n            clear: both;\n        }\n    \u003C/style\u003E\n    \u003Cscript type=\"text/javascript\" src=\"https://cdn.adnuntius.com/adn.js\"\u003E\u003C/script\u003E\n\u003C/head\u003E\n\u003Cbody\u003E\n\u003Cdiv id=\"adn-rsp--1151902766\" class=\"responseCtr\"\u003E\n\u003Cdiv class=\"contentWrapperPerItem\" id=\"adn-id-700276066\" data-line-item-id=\"mp08203xhp9zj6fw\" data-creative-id=\"fc5kcdmw67rczlxq\" data-creative-width=\"160\" data-creative-height=\"600\" data-response-token=\"zWZpgltxqlFH2nnX1EUWIw2mW5VR34Ixflit7BeZ7FQAAAAQCtjQz9kbGWD4nuZy3q6HaHB0N08vu_iRA0WAaeiNKIr59UwANAKuWJnZwvi7Ey8al19q_sqJ1od4ig0yx-ImPn1ewg2iCpErqyGzUhoFXTEbR5QuqAzzOiXM1IR2QWMlAsEXAIsZ-hcytbnAVb-Q7bvEHk1tC1vcM0eVCUjYIZDwsUkFXrLfYeQpA_RsIJ7MHCws8DvIY-Kxn99ojqEmNQtJ5NYc9KhlTpliWnLsq6-e9RGMvO7h9WNCJJ94BvdxDtKj0O6RUKC-gieGHvMqs4DaSs_Ah-L3YcrCfFBD6IHSKPtKd62vv0FIdU7uJLc\"\u003E\u003Ca rel=\"nofollow\" class=\"adn-external-container\" target=\"_top\" href=\"\"\u003E\u003Cscript type=\"text/javascript\"\u003E\nvar w = window;\nconsole.log('wtf');for (i = 0; i \u003C 10; i++) {\n  w = w.parent;\n  if (w.pbjs) {\n    console.log('inside');try {\n      w.pbjs.renderAd(document, \u00276871d6f969524c4\u0027);\n      break;\n    } catch (e) {\n      continue;\n    }\n  }\n}\n\u003C/script\u003E\u003C/a\u003E\n\u003C!-- PrebidJsRequest{parameters\u0026#x3D;{null\u0026#x3D;2022-06-23 12:55:00}, User-Agent\u0026#x3D;Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36, Accept\u0026#x3D;application/json; charset\u0026#x3D;utf-8, Accept-Language\u0026#x3D;en-US,en;q\u0026#x3D;0.9,is;q\u0026#x3D;0.8, Cookie\u0026#x3D;null\u0026#x3D;, RLNClientIpAddr\u0026#x3D;45.92.228.90, Referer\u0026#x3D;https://www.1881.no/?query\u0026#x3D;r%C3%B8rlegger, Connection\u0026#x3D;Keep-Alive} --\u003E\n\u003C!-- ng.services.external.prebid.PrebidJsResponse@b000ce9 --\u003E\u003Cdiv class=\"contentWrapperTrailer\"\u003E\u003C/div\u003E\u003C/div\u003E\n\u003C/div\u003E\n    \n\u003Cscript type=\"text/javascript\"\u003E\n//\u003C![CDATA[\n(function() {\n    var matchedAdCount = 1;\n    if (window.adn \u0026\u0026 adn.inIframe \u0026\u0026 adn.inIframe.processAdResponse) {\n        return adn.inIframe.processAdResponse({ matchedAdCount: matchedAdCount });\n    }\n    window.adn = window.adn || {};\n    adn.calls = adn.calls || [];\n    adn.calls.push(function() {\n        adn.inIframe.processAdResponse({ matchedAdCount: matchedAdCount });\n    });\n})();\n//]]\u003E\n\u003C/script\u003E\u003C/body\u003E\n\u003C/html\u003E",
+      "matchedAdCount": 1,
+      "responseId": "adn-rsp--1151902766",
+
+      "rts": ["zWZpgltxqlFH2nnX1EUWIw2mW5VR34Ixflit7BeZ7FQAAAAQCtjQz9kbGWD4nuZy3q6HaHB0N08vu_iRA0WAaeiNKIr59UwANAKuWJnZwvi7Ey8al19q_sqJ1od4ig0yx-ImPn1ewg2iCpErqyGzUhoFXTEbR5QuqAzzOiXM1IR2QWMlAsEXAIsZ-hcytbnAVb-Q7bvEHk1tC1vcM0eVCUjYIZDwsUkFXrLfYeQpA_RsIJ7MHCws8DvIY-Kxn99ojqEmNQtJ5NYc9KhlTpliWnLsq6-e9RGMvO7h9WNCJJ94BvdxDtKj0O6RUKC-gieGHvMqs4DaSs_Ah-L3YcrCfFBD6IHSKPtKd62vv0FIdU7uJLc"]
+    }
+  ],
+  "metaData": {
+
+    "usi": "7839642a7cf055403fd19c6ed05dd1a2",
+
+    "sessionId": "5d07b1fb0c7e877c71013ed43ae75cee"
+
+  },
+  "duplicateFilter": "AAAAAAAAAAA=",
+  "segments": [],
+  "keywords": []
+
+}
