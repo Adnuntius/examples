@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body><h3>Testing ad links for Nebenan</h3>
+<hr>
+  <p>Ad below is used by Nebenan. Testing that the link goes to the destination as required.</p>
+<div id="adn-00000000000432e3" style="display: none"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({  adUnits: [
+      { auId: '00000000000432e3', auW: '10000', auH: '10000', kv: { 'isolate': ['nebenan-test'] } }
+   ]});
+});
+</script>
+</body>
+</html>
