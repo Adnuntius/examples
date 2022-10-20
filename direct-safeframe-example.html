@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Adnuntius Safeframe example</title>
+</head>
+<body>
+  <h3>Adnuntius SafeFrame test</h3>
+<p>This is Google ad tag code shown directly into the page. Appears safe-frame isn't working internal to Google for the creatives that are being delivered.</p>
+  <hr>
+
+<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+<div id="gpt-passback">
+  <script>
+    window.googletag = window.googletag || {cmd: []};
+    googletag.cmd.push(function() {
+      googletag.defineSlot('/21817466220,22735647414/aperitif/desktop_skyscraperleft', [[300, 600], [160, 600], [180, 500]], 'gpt-passback').addService(googletag.pubads());
+      googletag.pubads().set("page_url", "https://www.aperitif.no/");
+      googletag.enableServices();
+      googletag.display('gpt-passback');
+    });
+  </script>
+</div>
+
+</body>
+</html>
