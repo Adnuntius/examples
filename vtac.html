@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VTAC Example</title>
+</head>
+<body><h1>VTAC Example Pager</h1>
+<p><small>Ad request: auId = 000000000023f5ef</small></p>
+<div id="adn-000000000023f5ef" style="display: none"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({  network: '5c', adUnits: [
+      { auId: '000000000023f5ef', auW: '800', auH: '800' }
+   ]});
+});
+</script>
+<h2>RMIT</h2>
+<p>Education opportunities are here.</p>
+</body>
+</html>
