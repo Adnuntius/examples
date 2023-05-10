@@ -1,0 +1,177 @@
+<html>
+<head>
+    <script async src="https://www.googletagservices.com/tag/js/gpt.js"></script>
+    
+    <script>
+      var FAILSAFE_TIMEOUT = 3000;
+
+      var adUnits = [
+        {
+          code: 'div-gpt-ad-1683684650729-0',
+          mediaTypes: {
+            banner: {
+              sizes: [[320, 320]]
+            }
+          },
+          bids: [{
+            bidder: 'adnuntius',
+            params: {
+              auId: "201208",
+              network: "adnuntius",
+              maxDeals: 1
+            }
+          }]
+        },
+        {
+          code: 'ad-div-2',
+          mediaTypes: {
+            banner: {
+              sizes: [300, 250],
+            }
+          },
+          bids: [{
+            bidder: "adnuntius",
+            params: {
+              auId: "201208",
+              network: "adnuntius",
+            }
+          }]
+        }
+      ];
+      var googletag = googletag || {};
+      googletag.cmd = googletag.cmd || [];
+      googletag.cmd.push(function() {
+        //googletag.pubads().disableInitialLoad();
+      });
+
+      var pbjs = pbjs || {};
+      pbjs.que = pbjs.que || [];
+
+      pbjs.que.push(function() {
+        pbjs.setConfig({
+          enableSendAllBids: true,
+          targetingControls: {
+            alwaysIncludeDeals: true
+          },
+          userSync: {
+            syncEnabled: false
+          }
+        });
+
+          function createAdServerTargeting() {
+              const keyParams = [
+                  {key: 'hb_format', param: 'mediaType'},
+                  {key: 'hb_deal', param: 'dealId'},
+                  {key: 'hb_size', param: 'size'},
+                  {key: 'hb_pb', param: 'pbMg'},
+                  {key: 'hb_adid', param: 'adId'},
+                  {key: 'hb_source', param: 'source'},
+                  {key: 'hb_bidder', param: 'bidderCode'}
+              ];
+
+              const targeting = [];
+              for (let i = -1; i < 5; i++) {
+                  const dealCount = i + 1;
+                  keyParams.forEach(function(kp) {
+                      const key = kp.key + (dealCount > 0 ? ('_adndeal' + dealCount) : '_adnuntius');
+                      targeting.push({
+                          key: key,
+                          val: function(bidResponse) {
+                              let value = dealCount === bidResponse.dealCount ? bidResponse[kp.param] : undefined;
+                              if (value) {
+                                  console.log("----");
+                                  console.log(key, dealCount, bidResponse.dealCount);
+                                  console.log(value);
+                                  console.log("-----");
+                              }
+                              return value;
+                          }
+                      })
+                  });
+              }
+              return targeting;
+          }
+
+          const adServerTargeting = createAdServerTargeting();
+          console.log(adServerTargeting);
+        pbjs.bidderSettings = {
+          adnuntius: {
+              suppressEmptyKeys: true,
+              //sendStandardTargeting: false,
+              //adserverTargeting: adServerTargeting,
+/*
+              standard: {
+                  adserverTargeting: adServerTargeting
+              },
+*/
+            allowAlternateBidderCodes: true,
+            allowedAlternateBidderCodes: ["adndeal1", "adndeal2", "adndeal3"],
+          }
+        };
+/*
+        pbjs.addAdUnits(adUnits);
+        pbjs.requestBids({bidsBackHandler: initAdserver});
+*/
+      });
+
+      function initAdserver() {
+        if (pbjs.initAdserverSet) return;
+/*
+        pbjs.initAdserverSet = true;
+        googletag.cmd.push(function() {
+          pbjs.que.push(function() {
+            pbjs.setTargetingForGPTAsync('div-gpt-ad-1683684650729-0');
+            //pbjs.setTargetingForGPTAsync('ad-div-2');
+            googletag.pubads().refresh();
+          });
+        });
+*/
+      }
+      // in case PBJS doesn't load
+      setTimeout(function() {
+        initAdserver();
+      }, FAILSAFE_TIMEOUT);
+
+        window.googletag = window.googletag || {cmd: []};
+        googletag.cmd.push(function() {
+            googletag.defineSlot('/19660636/320x320', [320, 320], 'div-gpt-ad-1683684650729-0').addService(googletag.pubads());
+            googletag.pubads().enableSingleRequest();
+            googletag.enableServices();
+        });
+
+/*
+      googletag.cmd.push(function() {
+        googletag.defineSlot('/19968336/header-bid-tag-0', [[300, 250]], 'ad-div-1').addService(googletag.pubads());
+        googletag.pubads().enableSingleRequest();
+        googletag.enableServices();
+      });
+
+      googletag.cmd.push(function() {
+        googletag.defineSlot('/19968336/header-bid-tag-0', [[300, 250]], 'ad-div-2').addService(googletag.pubads());
+        googletag.pubads().enableSingleRequest();
+        googletag.enableServices();
+      });
+*/
+
+    </script>
+</head>
+<body>
+<h2>Adnuntius Prebid Adapator Test</h2>
+<h5>Ad Slot 1</h5>
+<div id='ad-div-1'>
+    <script type='text/javascript'>
+      googletag.cmd.push(function() {
+        googletag.display('div-gpt-ad-1683684650729-0');
+      });
+    </script>
+</div>
+<h5>Ad Slot 2</h5>
+<div id='ad-div-2'>
+    <script type='text/javascript'>
+      googletag.cmd.push(function() {
+        //googletag.display('ad-div-2');
+      });
+    </script>
+</div>
+</body>
+</html>
