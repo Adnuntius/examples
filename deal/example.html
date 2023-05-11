@@ -1,0 +1,162 @@
+<html>
+<head>
+    <script async src="https://www.googletagservices.com/tag/js/gpt.js"></script>
+    <script async src="prebid.js"></script>
+    <script>
+        var FAILSAFE_TIMEOUT = 3000;
+
+        const MAX_DEALS = 5;
+        var adUnits = [
+            {
+                code: 'div-gpt-ad-1683695049516-0',
+                mediaTypes: {
+                    banner: {
+                        sizes: [[320, 320]]
+                    }
+                },
+                bids: [{
+                    bidder: 'adnuntius',
+                    params: {
+                        auId: "201208",
+                        network: "adnuntius",
+                        maxDeals: MAX_DEALS
+                    }
+                }]
+            }/*,
+        {
+          code: 'div-gpt-ad-1683767461393-0',
+          mediaTypes: {
+            banner: {
+              sizes: [[320, 320]],
+            }
+          },
+          bids: [{
+            bidder: "adnuntius",
+            params: {
+              auId: "201208",
+              network: "adnuntius",
+            }
+          }]
+        }*/
+        ];
+        var googletag = googletag || {};
+        googletag.cmd = googletag.cmd || [];
+        googletag.cmd.push(function() {
+            googletag.pubads().disableInitialLoad();
+        });
+
+        var pbjs = pbjs || {};
+        pbjs.que = pbjs.que || [];
+
+        pbjs.que.push(function() {
+            pbjs.setConfig({
+                enableSendAllBids: true,
+                targetingControls: {
+                    alwaysIncludeDeals: true
+                },
+                userSync: {
+                    syncEnabled: false
+                }
+            });
+
+            const cache = {};
+            function createAdServerTargeting() {
+                const keyParams = [
+                    {key: 'hb_format', param: 'mediaType'},
+                    {key: 'hb_deal', param: 'dealId'},
+                    {key: 'hb_size', param: 'size'},
+                    {key: 'hb_pb', param: 'pbMg'},
+                    {key: 'hb_adid', param: 'adId'},
+                    {key: 'hb_source', param: 'source'},
+                    {key: 'hb_bidder', param: 'bidderCode'}
+                ];
+
+                const targeting = [];
+                for (let i = -1; i < MAX_DEALS; i++) {
+                    const dealIndex = i;
+                    const dealCount = i + 1;
+                    keyParams.forEach(function(kp) {
+                        const storageKey = (dealCount > 0 ? ('adndeal' + dealCount) : 'adnuntius');
+                        const key = kp.key + "_" + storageKey;
+                        targeting.push({
+                            key: key,
+                            val: function(bidResponse) {
+                                cache[storageKey] = cache[storageKey] || {};
+                                if (cache[storageKey][kp.param]) {
+                                    return cache[storageKey][kp.param];
+                                }
+                                let value = dealCount === bidResponse.dealCount ? bidResponse[kp.param] : undefined;
+                                cache[storageKey][kp.param] = value;
+                                return value;
+                            }
+                        })
+                    });
+                }
+                return targeting;
+            }
+
+            let adServerTargeting = createAdServerTargeting();
+            pbjs.bidderSettings = {
+                adnuntius: {
+                    suppressEmptyKeys: false,
+                    adserverTargeting: adServerTargeting,
+                }
+            };
+            pbjs.addAdUnits(adUnits);
+            pbjs.requestBids({bidsBackHandler: initAdserver});
+        });
+
+        function initAdserver() {
+            if (pbjs.initAdserverSet) return;
+            pbjs.initAdserverSet = true;
+            googletag.cmd.push(function() {
+                pbjs.que.push(function() {
+                    pbjs.setTargetingForGPTAsync('div-gpt-ad-1683695049516-0');
+                    pbjs.setTargetingForGPTAsync('div-gpt-ad-1683767461393-0');
+                    googletag.pubads().refresh();
+                });
+            });
+        }
+        // in case PBJS doesn't load
+        setTimeout(function() {
+            initAdserver();
+        }, FAILSAFE_TIMEOUT);
+
+        window.googletag = window.googletag || {cmd: []};
+        googletag.cmd.push(function() {
+            googletag.defineSlot('/19660636/320x320', [320, 320], 'div-gpt-ad-1683695049516-0').addService(googletag.pubads());
+            googletag.pubads().enableSingleRequest();
+            googletag.enableServices();
+        });
+
+
+        window.googletag = window.googletag || {cmd: []};
+        googletag.cmd.push(function() {
+/*
+            googletag.defineSlot('/19660636/320x320', [320, 320], 'div-gpt-ad-1683767461393-0').addService(googletag.pubads());
+            googletag.pubads().enableSingleRequest();
+            googletag.enableServices();
+*/
+        });
+    </script>
+</head>
+<body>
+<h2>Adnuntius Prebid Adapator Test</h2>
+<h5>Ad Slot 1</h5>
+
+<!-- /19660636/320x320 -->
+<div id='div-gpt-ad-1683695049516-0' style='min-width: 320px; min-height: 320px;'>
+    <script>
+        googletag.cmd.push(function() { googletag.display('div-gpt-ad-1683695049516-0'); });
+    </script>
+</div>
+<h5>Ad Slot 2</h5>
+<!-- /19660636/320x320 -->
+<div id='div-gpt-ad-1683767461393-0' style='min-width: 320px; min-height: 320px;'>
+    <script>
+//        googletag.cmd.push(function() { googletag.display('div-gpt-ad-1683767461393-0'); });
+    </script>
+</div>
+
+</body>
+</html>
