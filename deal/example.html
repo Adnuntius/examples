@@ -5,7 +5,6 @@
     <script>
         var FAILSAFE_TIMEOUT = 3000;
 
-        const MAX_DEALS = 5;
         var adUnits = [
             {
                 code: 'div-gpt-ad-1683695049516-0',
@@ -15,12 +14,20 @@
                     }
                 },
                 bids: [{
-                    bidder: 'adnuntius',
-                    params: {
-                        auId: "201208",
-                        network: "adnuntius",
-                        maxDeals: MAX_DEALS
-                    }
+                  bidder: 'adnuntius',
+                  params: {
+                    auId: "201208",
+                    network: "adnuntius",
+                    maxDeals: 0
+                  }
+                },
+                {
+                  bidder: 'adndeal1',
+                  params: {
+                    auId: "201208",
+                    network: "adnuntius",
+                    maxDeals: 1
+                  }
                 }]
             }/*,
         {
@@ -60,6 +67,7 @@
             });
 
             function createAdServerTargeting() {
+                const MAX_DEALS = 5;
                 const keyParams = [
                     {key: 'hb_format', param: 'mediaType'},
                     {key: 'hb_deal', param: 'dealId'},
@@ -72,20 +80,18 @@
 
                 const cache = {};
                 const targeting = [];
-                for (let i = -1; i < MAX_DEALS; i++) {
-                    const dealCount = i + 1;
+                for (let dealCount = 0; dealCount <= MAX_DEALS; dealCount++) {
                     keyParams.forEach(function(kp) {
-                        const storageKey = (dealCount > 0 ? ('adndeal' + dealCount) : 'adnuntius');
-                        const key = kp.key + "_" + storageKey;
+                        const key = kp.key + "_" + (dealCount > 0 ? ('adndeal' + dealCount) : 'adnuntius');
                         targeting.push({
                             key: key,
                             val: function(bidResponse) {
-                                cache[storageKey] = cache[storageKey] || {};
-                                if (cache[storageKey][kp.param]) {
-                                    return cache[storageKey][kp.param];
+                                cache[key] = cache[key] || {};
+                                if (cache[key][kp.param]) {
+                                    return cache[key][kp.param];
                                 }
                                 let value = dealCount === bidResponse.dealCount ? bidResponse[kp.param] : undefined;
-                                cache[storageKey][kp.param] = value;
+                                cache[key][kp.param] = value;
                                 return value;
                             }
                         })
@@ -97,10 +103,11 @@
             pbjs.bidderSettings = {
                 adnuntius: {
                     suppressEmptyKeys: false,
-                    adserverTargeting: createAdServerTargeting(),
+                    // adserverTargeting: createAdServerTargeting(),
+                    allowedAlternateBidderCodes: ["adndeal1"]
                 }
             };
-            
+
             pbjs.addAdUnits(adUnits);
             pbjs.requestBids({bidsBackHandler: initAdserver});
         });
@@ -116,6 +123,7 @@
                 });
             });
         }
+
         // in case PBJS doesn't load
         setTimeout(function() {
             initAdserver();
@@ -131,35 +139,33 @@
 
         window.googletag = window.googletag || {cmd: []};
         googletag.cmd.push(function() {
-/*
-            googletag.defineSlot('/19660636/320x320', [320, 320], 'div-gpt-ad-1683767461393-0').addService(googletag.pubads());
-            googletag.pubads().enableSingleRequest();
-            googletag.enableServices();
-*/
+            /*
+                        googletag.defineSlot('/19660636/320x320', [320, 320], 'div-gpt-ad-1683767461393-0').addService(googletag.pubads());
+                        googletag.pubads().enableSingleRequest();
+                        googletag.enableServices();
+            */
         });
     </script>
 </head>
 <body>
 <h2>Adnuntius Prebid Adapator Test</h2>
 <h5>Ad Slot 1</h5>
-<p>GAM order: <a href="https://admanager.google.com/19660636#delivery/order/order_overview/order_id=3196407741&tab=line_items">https://admanager.google.com/19660636#delivery/order/order_overview/order_id=3196407741&tab=line_items</a></p>
-<p>Deal 1: <a href="https://admin.adnuntius.com/line-items/line-item/plh9pqgt7q0vr86v">https://admin.adnuntius.com/line-items/line-item/plh9pqgt7q0vr86v</a></p>    
-<p>Deal 2: <a href="https://admin.adnuntius.com/line-items/line-item/rwt1jq53q29wt08t">https://admin.adnuntius.com/line-items/line-item/rwt1jq53q29wt08t</a></p>    
 
 <!-- /19660636/320x320 -->
 <div id='div-gpt-ad-1683695049516-0' style='min-width: 320px; min-height: 320px;'>
     <script>
-        googletag.cmd.push(function() { googletag.display('div-gpt-ad-1683695049516-0'); });
+        googletag.cmd.push(function() {
+            googletag.display('div-gpt-ad-1683695049516-0');
+        });
     </script>
 </div>
-    <!--
 <h5>Ad Slot 2</h5>
 <!-- /19660636/320x320 -->
 <div id='div-gpt-ad-1683767461393-0' style='min-width: 320px; min-height: 320px;'>
     <script>
-//        googletag.cmd.push(function() { googletag.display('div-gpt-ad-1683767461393-0'); });
+        //        googletag.cmd.push(function() { googletag.display('div-gpt-ad-1683767461393-0'); });
     </script>
 </div>
--->
+
 </body>
 </html>
