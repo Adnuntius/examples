@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Creative Previewer</title>
+</head>
+<body>
+
+<h1>Creative Previewer</h1>
+<p>Add <code>c={creativeId}</code> as query string params to have that creative be previewed.</p>
+<div id="targetDivId"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+  var urlParams = new URLSearchParams(window.location.search);
+  var cId = urlParams.get("c");
+
+  if (liId && cId) {
+    window.adn = window.adn || {};
+    adn.calls = adn.calls || [];
+    adn.calls.push(function() {
+      adn.preview({
+        networkId: 'b7462',
+        creatives: [{
+          creativeId: cId,
+          targetId: 'targetDivId',
+          creativeWidth: 1000, creativeHeight: 1000
+        }]
+      });
+    });
+  }
+</script>
+
+</body>
+</html>
