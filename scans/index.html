@@ -14,7 +14,7 @@
   var urlParams = new URLSearchParams(window.location.search);
   var cId = urlParams.get("c");
 
-  if (liId && cId) {
+  if (cId) {
     window.adn = window.adn || {};
     adn.calls = adn.calls || [];
     adn.calls.push(function() {
