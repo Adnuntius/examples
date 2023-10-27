@@ -12,13 +12,17 @@
 <script>
   var urlParams = new URLSearchParams(window.location.search);
   var cId = urlParams.get("c");
+  var networkId = urlParams.get("n");
+  var urlEnv = urlParams.get("env");
+  var env = urlEnv === 'singlenode' ? 'localhost' : urlEnv ? urlEnv : 'production';
 
   if (cId) {
     window.adn = window.adn || {};
     adn.calls = adn.calls || [];
     adn.calls.push(function() {
       adn.preview({
-        networkId: 'b7462',
+        env: env,
+        networkId: networkId,
         creatives: [{
           creativeId: cId,
           targetId: 'targetDivId',
