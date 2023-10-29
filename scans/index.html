@@ -15,6 +15,8 @@
   var networkId = urlParams.get("n");
   var urlEnv = urlParams.get("env");
   var env = urlEnv === 'singlenode' ? 'localhost' : urlEnv ? urlEnv : 'production';
+  var w = urlParams.get("w") || 1000;
+  var h = urlParams.get("h") || 1000;
 
   if (cId) {
     window.adn = window.adn || {};
@@ -26,7 +28,7 @@
         creatives: [{
           creativeId: cId,
           targetId: 'targetDivId',
-          creativeWidth: 1000, creativeHeight: 1000
+          creativeWidth: w, creativeHeight: h
         }]
       });
     });
