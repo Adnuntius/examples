@@ -14,7 +14,7 @@
   var cId = urlParams.get("c");
   var networkId = urlParams.get("n");
   var urlEnv = urlParams.get("env");
-  var env = urlEnv === 'singlenode' ? 'localhost' : 'production';
+  var env = urlEnv === 'singlenode' ? 'localhost' : urlEnv ? urlEnv : 'production';
   var w = urlParams.get("w") || 1000;
   var h = urlParams.get("h") || 1000;
 
