@@ -7,32 +7,49 @@
 <body>
 <h1>Creative Previewer</h1>
 <p>Add <code>c={creativeId}</code> as query string params to have that creative be previewed.</p>
+<div id="errResponse" class="adResponse"></div>
+<div id="impResponse" class="adResponse"></div>
 <div id="targetDivId"></div>
 <script src="https://cdn.adnuntius.com/adn.js" async></script>
 <script>
-  var urlParams = new URLSearchParams(window.location.search);
-  var cId = urlParams.get("c");
-  var networkId = urlParams.get("n");
-  var urlEnv = urlParams.get("env");
-  var env = urlEnv === 'singlenode' ? 'localhost' : urlEnv ? urlEnv : 'production';
-  var w = urlParams.get("w") || 1000;
-  var h = urlParams.get("h") || 1000;
+    var urlParams = new URLSearchParams(window.location.search);
+    var cId = urlParams.get("c");
+    var networkId = urlParams.get("n");
+    var urlEnv = urlParams.get("env");
+    var hash = urlParams.get("hash");
+    var env = urlEnv === 'singlenode' ? 'localhost' : urlEnv ? urlEnv : 'production';
 
-  if (cId) {
-    window.adn = window.adn || {};
-    adn.calls = adn.calls || [];
-    adn.calls.push(function() {
-      adn.preview({
-        env: env,
-        networkId: networkId,
-        creatives: [{
-          creativeId: cId,
-          targetId: 'targetDivId',
-          creativeWidth: w, creativeHeight: h
-        }]
-      });
-    });
-  }
+    if (cId) {
+        var fail = function() {
+            document.getElementById("errResponse").innerHTML = "FAIL: No preview possible.";
+        };
+        var pass = function() {
+            document.getElementById("impResponse").innerHTML = "PASS: Successful preview.";
+        };
+        window.adn = window.adn || {};
+        adn.calls = adn.calls || [];
+        adn.calls.push(function() {
+            var wParam = urlParams.get("w");
+            var w = adn.util.isNumber(wParam) && wParam > 0 ? wParam : 1000;
+            var hParam = urlParams.get("h");
+            var h = adn.util.isNumber(hParam) && hParam > 0 ? hParam : 1000;
+
+            adn.preview({
+                env: env,
+                networkId: networkId,
+                creatives: [{
+                    creativeId: cId,
+                    targetId: 'targetDivId',
+                    hash: hash,
+                    creativeWidth: w,
+                    creativeHeight: h,
+                    onImpressionResponse: pass,
+                    onNoMatchedAds: fail,
+                    onError: fail
+                }]
+            });
+        });
+    }
 </script>
 
 </body>
