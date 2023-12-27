@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body><h3>Adnuntius Ad Tag Generator and Tester</h3>
+<hr>
+<p><small>Ad request: auId = 432e3</small></p>
+<div id="adn-432e3" style="display: none"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({  network: '5c', adUnits: [
+      { auId: '432e3', auW: '10000', auH: '10000', kv: { 'isolate': ['firefox-check'] } }
+   ]});
+});
+</script>
+</body>
+</html>
