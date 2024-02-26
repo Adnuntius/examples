@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body><h3>Adnuntius Ad Tag Generator and Tester</h3>
+<p><small>Ad request: auId = 432e3</small></p>
+
+<hr>
+<h1>GDPR=1 and Consent String</h1>
+<div id="top" style="display: none"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+  window.adn = window.adn || {}; adn.calls = adn.calls || [];
+  adn.calls.push(function() {
+    adn.request({  network: '5c', adUnits: [
+        { auId: '432e3', auW: '10000', targetId: 'top', auH: '10000', kv: {'isolate': 'gdpr'}, gdpr: 1, consentString: 'CO6hqJNO6hqJNK2AAAENA5CAALAAAAAAAAAAGrwAQGrgAAAA.IGvNd_X_fb2_j-_599_t0eY1f9_6_v2wzjheds-8Nyd_X_L8X_2MyvB36pq4KuR4ku3bBAQFtHOncTQmR4IlVqTLsbk2Mr7NKJ7LEmlsbe2dYGHtPn9XT_ZKZ707v___7_3______77__7___3_A' }
+      ]});
+  });
+</script>
+
+</body>
+</html>
