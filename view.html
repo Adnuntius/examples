@@ -1,0 +1,99 @@
+<html>
+
+<head>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script async src="https://www.googletagservices.com/tag/js/gpt.js"></script>
+  <script async src="https://acdn.adnxs.com/prebid/not-for-prod/1/prebid.js"></script>
+  <script>
+    var PREBID_TIMEOUT = 100000;
+    var FAILSAFE_TIMEOUT = 200000;
+
+    let sizes = [[980, 360], [980, 300], [980, 240], [980, 120], [300,250]];
+    var adUnits = [
+      {
+        code: "div-1",
+        mediaTypes: {
+          banner: {
+            sizes: sizes
+          }
+        },
+        bids: [
+        {
+            bidder: "adnuntius",
+            params: {
+              auId: "00000000000432e3",
+              network: "da_trippers",
+              targeting: {
+                kv: {isolate: 'serverside'}
+              }
+            }
+          }
+        ]
+      }
+    ];
+
+    // ======== DO NOT EDIT BELOW THIS LINE =========== //
+    var googletag = googletag || {};
+    googletag.cmd = googletag.cmd || [];
+    googletag.cmd.push(function() {
+      googletag.pubads().disableInitialLoad();
+    });
+
+    var pbjs = pbjs || {};
+    pbjs.que = pbjs.que || [];
+
+    pbjs.que.push(function() {
+      pbjs.setConfig({debug: true});
+      pbjs.addAdUnits(adUnits);
+      pbjs.requestBids({
+        bidsBackHandler: initAdserver,
+        timeout: PREBID_TIMEOUT
+      });
+    });
+
+    function initAdserver() {
+      if (pbjs.initAdserverSet) return;
+      pbjs.initAdserverSet = true;
+      googletag.cmd.push(function() {
+        pbjs.que.push(function() {
+          pbjs.setTargetingForGPTAsync();
+          googletag.pubads().refresh();
+        });
+      });
+    }
+    // in case PBJS doesn't load
+    setTimeout(function() {
+      initAdserver();
+    }, FAILSAFE_TIMEOUT);
+
+
+    googletag.cmd.push(function() {
+      googletag.defineSlot('/19968336/header-bid-tag-0', sizes, 'div-1').addService(googletag.pubads());
+      googletag.pubads().enableSingleRequest();
+      googletag.enableServices();
+    });
+
+
+  </script>
+
+</head>
+
+<body>
+<h2>Basic Prebid.js Example - AGAIN</h2>
+<h5>Div-1</h5>
+<div id="hook"></div>
+<div id='div-1'>
+  <script type='text/javascript'>
+    googletag.cmd.push(function() {
+      document.getElementById("hook").innerHTML = "MY EXAMPLE";
+      googletag.display('div-1');
+    });
+  </script>
+</div>
+
+
+
+</body>
+
+</html>
+
