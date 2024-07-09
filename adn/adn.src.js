@@ -5228,6 +5228,7 @@ try {
       console.log(win);
       console.log(win.parent);
       console.log(doc.referrer);
+      console.log(win.parent.document.getElementsByTagName("body"));
 
       if (!isDevScript) {
         var scriptOverride = misc.getScriptOverride();
