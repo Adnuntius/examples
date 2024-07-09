@@ -5228,6 +5228,8 @@ try {
       console.log(win);
       console.log(win.parent);
       console.log(doc.referrer);
+      console.log("what is going on?");
+      console.log(win.parent.document);
       console.log(win.parent.document.getElementsByTagName("body"));
 
       if (!isDevScript) {
