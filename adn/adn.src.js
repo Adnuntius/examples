@@ -8,7 +8,6 @@ adn.version = '/* 0000 */';
 
 try {
   (function(adn, doc, win) {
-    console.log("wtf???");
     var DEV_SCRIPT_ID = "ADN_DEV_SCRIPT",
       isDevScript = !!(doc.getElementById(DEV_SCRIPT_ID) || {}).src;
     if (adn.out && !isDevScript) {
@@ -5231,6 +5230,9 @@ try {
       console.log("what is going on?");
       console.log(win.parent.document);
       console.log(win.parent.document.getElementsByTagName("body"));
+      console.log("even more");
+      console.log(win.parent.parent.document);
+      console.log(win.parent.parent.document.getElementsByTagName("body"));
 
       if (!isDevScript) {
         var scriptOverride = misc.getScriptOverride();
