@@ -8,17 +8,44 @@
 
 <h1>Direct Ad Request</h1>
 <h3>Adnuntius Ad Tag Generator and Tester</h3>
-<div id="timing"></div>
+<div id="timingHook">
+</div>
 <hr>
 <p><small>Ad request: auId = 432e3</small></p>
-<div id="adn-432e3" style="display: none"></div>
+<div id="hook">
+</div>
 <script src="https://cdn.adnuntius.com/adn.js" async></script>
 <script>
   window.adn = window.adn || {}; adn.calls = adn.calls || [];
   adn.calls.push(function() {
-    adn.request({  network: '5c', timingFunc: function(ads, time) { console.log(ads, time); document.getElementById("timing").innerHTML = "Ad request took " + time + "ms"; }, adUnits: [
-        { auId: '432e3', auW: '10000', auH: '10000', kv: { 'isolate': ['creative-tag-gdpr'] } }
-      ]});
+    const divHook = document.getElementById("hook");
+    const timingHook = document.getElementById("timingHook");
+
+    let runningTotal = 0;
+    for (let i = 0; i < 100; i++) {
+      const divTargetId = "target-" + i;
+      const divTimingTargetId = "target-timing-" + i;
+
+      const diff = i + Math.max(0, i - 1);
+      runningTotal = runningTotal + diff;
+
+      (function(runningTotal, diff) {
+        setTimeout(function() {
+          const divEl = document.createElement("div");
+          divEl.id = divTargetId;
+          divHook.appendChild(divEl);
+
+          const timingEl = document.createElement("div");
+          timingEl.id = divTimingTargetId;
+          timingHook.appendChild(timingEl);
+
+          adn.request({  network: '5c', timingFunc: function(ads, time) { document.getElementById(divTimingTargetId).innerHTML = "Ad request at " + runningTotal + "s took " + time + "ms"; }, adUnits: [
+              { auId: '432e3', targetId: divTargetId, auW: '10000', auH: '10000', kv: { 'isolate': ['creative-tag-gdpr'] } }
+            ]});
+
+        }, 1000 * runningTotal);
+      })(runningTotal, diff)
+    }
   });
 </script>
 </body>
