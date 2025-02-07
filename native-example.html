@@ -1,0 +1,272 @@
+<html>
+
+<head>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script async src="https://www.googletagservices.com/tag/js/gpt.js"></script>
+  <script async src="http://cdn.jsdelivr.net/npm/prebid.js@latest/dist/not-for-prod/prebid.js"></script>
+  <script>
+    var PREBID_TIMEOUT = 100000;
+    var FAILSAFE_TIMEOUT = 200000;
+
+    let sizes = [[980, 360], [980, 300], [980, 240], [980, 120], [300, 250], [720, 960]];
+    var adUnits = [
+      {
+        code: "div-1",
+        mediaTypes: {
+          native: {
+            "ortb": {
+              "eventtrackers": [
+                {
+                  "event": 1,
+                  "methods": [1,2]
+                },
+                {
+                  "event": 2,
+                  "methods": [1]
+                }
+              ],
+              "assets": [
+                {
+                  id: 789,
+                  required: 1,
+                  title: {
+                    len: 140
+                  }
+                },
+                {
+                "id": 1,
+                "required": 1,
+                "img": {
+                  "type": 3,
+                  "w": 250,
+                  "h": 250
+                }
+              },
+                {
+                "id": 122,
+                "required": 1,
+                "img": {
+                  "type": 1,
+                  "w": 15,
+                  "h": 15
+                }
+              },
+                {
+                  id: 2,
+                  required: 1,
+                  data: {
+                    type: 1
+                  }
+                },
+                {
+                  id: 3,
+                  required: 1,
+                  data: {
+                    type: 2
+                  }
+                },
+                {
+                  id: 4,
+                  required: 0,
+                  data: {
+                    type: 3
+                  }
+                },
+                {
+                  id: 5,
+                  required: 0,
+                  data: {
+                    type: 4
+                  }
+                },
+                {
+                  id: 6,
+                  required: 0,
+                  data: {
+                    type: 5
+                  }
+                },
+                {
+                  id: 7,
+                  required: 0,
+                  data: {
+                    type: 6
+                  }
+                },
+                {
+                  id: 8,
+                  required: 0,
+                  data: {
+                    type: 7
+                  }
+                },
+                {
+                  id: 9,
+                  required: 0,
+                  data: {
+                    type: 8
+                  }
+                },
+                {
+                  id: 10,
+                  required: 0,
+                  data: {
+                    type: 9
+                  }
+                },
+                {
+                  id: 11,
+                  required: 0,
+                  data: {
+                    type: 10
+                  }
+                },
+                {
+                  id: 12,
+                  required: 0,
+                  data: {
+                    type: 11
+                  }
+                }
+              ]
+            }
+          }
+        },
+        bids: [
+          {
+            bidder: "adnuntius",
+            params: {
+              auId: "201208",
+              network: "1287",
+              bidType: 'netBid'
+            }
+          }
+        ],
+        renderer: {
+          render: function(bid) {
+            console.log("BID", bid);
+            // Example: Use a custom template to render the native ad
+            var adHtml = `
+            <div class="native-ad-container">
+              <h3>${bid.native.title}</h3>
+              <div><img src="${bid.native.icon.url}"></div>
+              <div><a href="${bid.native.clickUrl}"><img src="${bid.native.image.url}"></a></div>
+              <p>${bid.native.body}</p>
+              <p>${bid.native.body2}</p>
+              <p>Phone: ${bid.native.phone}</p>
+              <p>Rating: ${bid.native.rating}</p>
+              <p>Likes: ${bid.native.likes}</p>
+              <div><a href="${bid.native.clickUrl}">${bid.native.displayUrl}</a></div>
+              <p><small>Sponsored by: ${bid.native.sponsoredBy}</small></p>
+              <p><small>Downloads: ${bid.native.downloads}</small></p>
+              <!--
+              <p><small>Call to Action: ${bid.native.ctoa}</small></p>
+              <p><small>Price: ${bid.native.price}</small></p>
+              <p><small>Sale Price: ${bid.native.salePrice}</small></p>
+              -->
+            </div>
+        `;
+            document.getElementById('div-1').innerHTML = adHtml;
+          }
+        }
+      }
+    ];
+
+    // ======== DO NOT EDIT BELOW THIS LINE =========== //
+    var googletag = googletag || {};
+    googletag.cmd = googletag.cmd || [];
+    googletag.cmd.push(function() {
+      googletag.pubads().disableInitialLoad();
+    });
+
+    var pbjs = pbjs || {};
+    pbjs.que = pbjs.que || [];
+
+    pbjs.que.push(function() {
+      pbjs.setConfig({debug: true});
+      pbjs.addAdUnits(adUnits);
+      pbjs.requestBids({
+        bidsBackHandler: initAdserver,
+        timeout: PREBID_TIMEOUT
+      });
+    });
+
+    function initAdserver() {
+      if (pbjs.initAdserverSet) return;
+      pbjs.initAdserverSet = true;
+      googletag.cmd.push(function() {
+        pbjs.que.push(function() {
+          pbjs.setTargetingForGPTAsync();
+          googletag.pubads().refresh();
+        });
+      });
+    }
+
+    // in case PBJS doesn't load
+    setTimeout(function() {
+      initAdserver();
+    }, FAILSAFE_TIMEOUT);
+
+
+    googletag.cmd.push(function() {
+      googletag.defineSlot('/19968336/header-bid-tag-0', sizes, 'div-1').addService(googletag.pubads());
+      googletag.pubads().enableSingleRequest();
+      googletag.enableServices();
+    });
+
+
+  </script>
+
+</head>
+
+<body style="background-color: lightblue">
+<h2>Native Ad Example</h2>
+<p>Below there's a native ad -- it's the thing in the box.</p>
+<div id='div-1' style="background-color: #d0d0ff; border: 1px solid black; padding: 10px 20px; display: inline-block;max-width: 250px;">
+  <script type='text/javascript'>
+    googletag.cmd.push(function() {
+      document.getElementById("hook").innerHTML = "MY EXAMPLE";
+      googletag.display('div-1');
+    });
+  </script>
+</div>
+
+<!--
+<script>
+  var pbjs = pbjs || {};
+  pbjs.que = pbjs.que || [];
+  pbjs.que.push(function() {
+    width = 320;
+    height = 250;
+    tag = '<iframe src="https://adserver.dev.adnuntius.com/i?lineItemId=fs2ygmtkgng297l2&creativeId=7vw3ztd6dv&network=60&dimensions=&cb=[CACHEBUSTER]&clickTrackingUrl="></iframe>';
+    pbjs.getEvents()
+      .filter((event) => {
+        console.log(event);
+        event.eventType === 'auctionEnd';
+      })
+      .map((event) =>
+        event.args.adUnits
+          .filter((adUnit) => adUnit.sizes.filter((size) => size[0] == width && size[1] == height).length > 0)
+          .map((adUnit) => adUnit.code)
+      )
+      .filter((adUnitCodes) => adUnitCodes.length > 0)
+      .flatMap((x) => x)
+      .filter(
+        (adUnitCode) => {
+          console.log("in this filter");
+          document.getElementById(adUnitCode) || document.querySelector(`[id*="${adUnitCode}"]:not([id^=prpb-mask--container-])`)
+        }
+      )
+      .map(
+        (adUnitCode) => document.getElementById(adUnitCode) || document.querySelector(`[id*="${adUnitCode}"]:not([id^=prpb-mask--container-])`)
+      )
+      .forEach((div) => div.innerHTML = tag);
+  });
+</script>
+-->
+
+
+</body>
+
+</html>
+
