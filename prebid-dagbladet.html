@@ -19,11 +19,23 @@
           },
           native: {
             "sizes": sizes,
-            kv:
-              [{placement: ["ad-netboard1"]}, {publisher: ["www.dagbladet.no"]}, {page_section: 'sport'}, {os: "MacOS"}, {category: ["Entertainment", "Sports"]}, {keywords: ["one", "two"]}, {page_type: "article"}, {context: ["feil"]}, {tags: ["something"]}]
-            ,
+            c: ['examples'],
+            ortb2: {
+              kv:
+                [{placement: ["ad-netboard1"]}, {publisher: ["www.dagbladet.no"]}, {page_section: 'sport'}, {os: "MacOS"}, {category: ["Entertainment", "Sports"]}, {keywords: ["one", "two"]}, {page_type: "article"}, {context: ["feil"]}, {tags: ["something"]}]
+            },
             "ortb": {
               "ver": "1.2",
+              "eventtrackers": [
+                {
+                  "event": 1,
+                  "methods": [1,2]
+                },
+                {
+                  "event": 2,
+                  "methods": [1]
+                }
+              ],
               "assets": [
                 {
                   "id": 0,
@@ -112,6 +124,15 @@
             </div>
         `;
             document.getElementById('div-1').innerHTML = adHtml;
+            if (bid.native.impressionTrackers || bid.native.impressionTrackers.length > 0) {
+              for (var i = 0; i < bid.native.impressionTrackers.length; i++) {
+                const img = document.createElement("img"); // Create an <img> element
+                img.src = bid.native.impressionTrackers[i];
+                img.width = 1;
+                img.height = 1;
+                document.getElementById('div-1').appendChild(img);
+              }
+            }
           }
         }
       }
