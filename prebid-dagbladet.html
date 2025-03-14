@@ -1,11 +1,10 @@
 
-
 <html>
 
 <head>
   <link rel="icon" type="image/png" href="/favicon.png">
   <script async src="https://www.googletagservices.com/tag/js/gpt.js"></script>
-  <script async src="https://cdn.jsdelivr.net/npm/prebid.js@latest/dist/not-for-prod/prebid.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/prebid.js@9.33.0/dist/not-for-prod/prebid.js"></script>
   <script>
     var PREBID_TIMEOUT = 100000;
     var FAILSAFE_TIMEOUT = 200000;
@@ -15,7 +14,14 @@
       {
         code: "div-1",
         mediaTypes: {
+          banner: {
+            sizes: sizes
+          },
           native: {
+            "sizes": sizes,
+            kv:
+              [{placement: ["ad-netboard1"]}, {publisher: ["www.dagbladet.no"]}, {page_section: 'sport'}, {os: "MacOS"}, {category: ["Entertainment", "Sports"]}, {keywords: ["one", "two"]}, {page_type: "article"}, {context: ["feil"]}, {tags: ["something"]}]
+            ,
             "ortb": {
               "ver": "1.2",
               "assets": [
@@ -156,7 +162,7 @@
 </head>
 
 <body style="background-color: lightblue">
-<h2>Native Ad Example</h2>
+<h2>Native Ad Example - FROM DAGBLADET</h2>
 <p>Below there's a native ad -- it's the thing in the box.</p>
 <div id='div-1' style="background-color: #d0d0ff; border: 1px solid black; padding: 10px 20px; display: inline-block;max-width: 250px;">
   <script type='text/javascript'>
