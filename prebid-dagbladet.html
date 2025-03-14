@@ -87,6 +87,9 @@
         renderer: {
           render: function(bid) {
             console.log("BID", bid);
+            if (!bid.native) {
+              document.getElementById('div-1').innerHTML = bid.ad;
+            }
             // Example: Use a custom template to render the native ad
             var adHtml = `
             <div class="native-ad-container">
