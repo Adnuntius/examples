@@ -62,7 +62,7 @@
       const [header, ...rows] = lines;
       return rows.map(line => {
         const [score, title, description] = line.split('\t');
-        return { title, description };
+        return { score, title, description };
       });
     }
 
@@ -89,16 +89,17 @@
       responses.push({
         title: article.title,
         description: article.description,
-        sentiment
+        computed_sentiment: article.score,
+        user_sentiment: sentiment
       });
       currentIndex++;
       showArticle();
     }
 
     function downloadCSV() {
-      const csvRows = ["Title,Description,Sentiment"];
+      const csvRows = ["Title,Description,User Sentiment,Computed Sentiment"];
       responses.forEach(r => {
-        const row = `"${r.title.replace(/"/g, '""')}","${r.description.replace(/"/g, '""')}",${r.sentiment}`;
+        const row = `"${r.title.replace(/"/g, '""')}","${r.description.replace(/"/g, '""')}",${r.user_sentiment},${r.computed_sentiment}`;
         csvRows.push(row);
       });
       const csvContent = csvRows.join("\n");
