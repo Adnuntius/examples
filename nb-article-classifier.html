@@ -38,7 +38,7 @@
 </head>
 <body>
 <h2>News Article Classifier</h2>
-<div id="article-box" class="article">Laster inn artikler...</div>
+<div id="article-box" class="article">Loading articles...</div>
 <div class="buttons" style="display:none;">
     <button onclick="classify('Positive')">Positive</button>
     <button onclick="classify('Neutral')">Neutral</button>
@@ -50,8 +50,6 @@
 </div>
 
 <script>
-    // Replace this with your actual TSV URL
-    const tsvUrl = "https://raw.githubusercontent.com/Adnuntius/examples/refs/heads/gh-pages/nb_sentiment.csv";
 
     let articles = [];
     let currentIndex = 0;
@@ -114,6 +112,7 @@
 
     async function fetchData() {
       try {
+        const tsvUrl = "https://raw.githubusercontent.com/Adnuntius/examples/refs/heads/gh-pages/" + lang + "_sentiment.csv";
         const response = await fetch(tsvUrl);
         const text = await response.text();
         articles = shuffle(parseTSV(text));
@@ -123,8 +122,11 @@
         console.error('Failed to fetch TSV:', error);
       }
     }
+    const params = new URLSearchParams(window.location.search);
+    const lang = params.get("lang") || "nb";
+    console.log("Language:", lang);
 
-    fetchData();
+    fetchData(lang);
 </script>
 </body>
 </html>
