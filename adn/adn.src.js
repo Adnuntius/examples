@@ -155,6 +155,11 @@ try {
           parent: 'parent',
           inIframe: 'inIframe'
         },
+        attentionStatus: {
+          notAttention: 'notAttention',
+          attention: 'attention',
+          attentionSent: 'attentionSent'
+        },
         viewabilityStatus: {
           notViewed: 'notViewed',
           divMissing: 'divMissing',
@@ -206,6 +211,8 @@ try {
       gEventListenerRegister = {},
       gAdLocs = {},
       gAdSpecs = {},
+      gSectionSpecs = {},
+      gObserverConfig = null,
       gComposedAds = {},
       gWindowStats = {},
       gRequestFilterManager = {},
@@ -222,6 +229,8 @@ try {
       IMP_REG_DATA_ATTR = 'data-imp-reg',
       MAX_AD_UNITS_PER_REQUEST = 50,
       SCRIPT_OVERRIDE_QSTRING = 'script-override',
+      UNLOAD_EVENTS = ['visibilitychange', 'pagehide', 'beforeunload', 'unload'],
+      SCRIPT_OVERRIDE_SERVER_QSTRING = 'script-server-override',
       BLOCK_REFRESH_QSTRING = 'block-refresh',
       DEBUG_UI_URL_STRING = "adndebug123",
       LOG_UI_URL_STRING = "adnlog123",
@@ -230,6 +239,7 @@ try {
       STORAGE_ADV_METADATA_KEY = "adn.metaData",
       STORAGE_CONV_METADATA_KEY = "adn.conv",
       STORAGE_DAT_KEY = "adn.data",
+      VIEWABILITY_THRESHOLDS = [60, 70, 80, 90],//, 95, 100],
       STORAGE_DAT_SEGMENTS_KEY = "adn.data.segments",
       SYNC_BOUNDARY = 6 * 3600 * 1000, // 6 hours in milliseconds
       PICK_DATA_PARAMETERS = ['auId', 'widgetId', 'auW', 'auH', 'w', 'h', 'definedDims', 'resizeToContent', 'stack', 'ifrStyle', 'targetStyle', 'retAdsW', 'retAdsH', 'ads', 'dims', 'retAdCount', 'targetId', 'replacements', 'keywords', 'kv', 'userSegments', 'c', 'ps', 'auml', 'floorPrice', 'requestArgs', 'targetClass'],
@@ -240,6 +250,8 @@ try {
       gRTokensCache = {},
       gLpLi,
       gLpC,
+      gConsentString,
+      gGdpr,
       gKeywords = [],
       gFeedback = {console: ENUMS.feedback.console.warnings, inScreen: ENUMS.feedback.inScreen.silent},
       gComposedRequest = ENUMS.composedRequest.noRequest;
@@ -332,8 +344,7 @@ try {
           storage.setItem(x, x);
           storage.removeItem(x);
           return true;
-        }
-        catch(e) {
+        } catch (e) {
           return false;
         }
       },
@@ -869,6 +880,7 @@ try {
             imp: locations.baseRequestLoc + misc.encodeAsUrlParams(urlArgs, true) + (adn.util.hasProperties(extraImpParams) ? misc.encodeAsUrlParams(extraImpParams, true) : ""),
             rendered: locations.baseRequestLoc.replace("/i?", "/b?"),
             viewable: locations.baseRequestLoc.replace("/i?", "/v?"),
+            attention: locations.baseRequestLoc.replace("/i?", "/f?"),
             visible: locations.baseRequestLoc.replace("/i?", "/s?"),
             custom: locations.baseRequestLoc.replace("/i?", "/u?"),
             retargeting: locations.baseRequestLoc.replace("/i?", "/r?"),
@@ -897,6 +909,11 @@ try {
           if (gPrevTripTime !== gTripTime && gTripTime > 0) {
             gPrevTripTime = gTripTime;
             renderedAndTimed += "&tripTime=" + gTripTime;
+          }
+          if (win.screen && win.screen.availHeight) {
+            if (!misc.isUnitTest()) {
+              renderedAndTimed += misc.encodeAsUrlParams({screen: win.screen.availWidth + "x" + win.screen.availHeight}, true);
+            }
           }
           var ajax = adn.util.getNewAjax("POST", renderedAndTimed, function() {
             if (ajax.readyState && ajax.readyState !== 4) {
@@ -1068,7 +1085,7 @@ try {
 
             adUnitArgs.serverUrl = null;
             var ifr = dom.insIframe(adUnitArgs, targetEl);
-            var scriptOverride = misc.getScriptOverride();
+            var scriptOverride = misc.getAndSetScriptOverride();
             if (scriptOverride && adContent.indexOf(scriptOverride) < 0) {
               adContent = adContent.replace(/<script src="?https?:\/\/[A-Za-z_0-9:.-]{5,50}\/adn.(src.)?js"?><\/script>/g, "<script src=\"" + scriptOverride + "\" id=\"" + DEV_SCRIPT_ID + "\"></script>");
             }
@@ -1168,7 +1185,12 @@ try {
             src += misc.encodeAsUrlParams({dimensions: JSON.stringify(args.dimensions)}, true);
           }
           src += misc.encodeAsUrlParams({cb: encodeURIComponent(misc.uuid())}, true);
-          src += "&clickTrackingUrl=" + (args.clickTrackingUrl.indexOf("http") === 0 ? (args.clickTrackingUrl.indexOf("%3A%2F") > 3 ? args.clickTrackingUrl : encodeURIComponent(args.clickTrackingUrl)) : "");
+          if (args.clickTrackingUrlEsc) {
+            src += "&clickTrackingUrlEsc=" + args.clickTrackingUrlEsc;
+          } else if (args.clickTrackingUrl) {
+            var alreadyEscapedIndicator = args.clickTrackingUrl.indexOf("%3A%2F");
+            src += "&clickTrackingUrlEsc=" + (args.clickTrackingUrl.indexOf("http") === 0 ? (alreadyEscapedIndicator > 3 && alreadyEscapedIndicator < 8 ? args.clickTrackingUrl : encodeURIComponent(args.clickTrackingUrl)) : "");
+          }
           return src;
         },
         supportsSrcDoc: function() {
@@ -1276,6 +1298,9 @@ try {
           };
           try {
             info.adsDivEl = doc.getElementById(containerId);
+            if (!info.adsDivEl.hasAttribute("data-au-id")) {
+              info.adsDivEl = info.adsDivEl.querySelector("[data-au-id]");
+            }
             if (!info.adsDivEl) {
               return {};
             }
@@ -1300,6 +1325,7 @@ try {
               }
             }
             info.definedDims = {w: 0, h: 0};
+            info.auId = info.adsDivEl.getAttribute("data-au-id");
             info.ads = adn.util.map(misc.getAdsFromContainer(info.adsDivEl), function(a) {
               var width = misc.dimForAttr(a.getAttribute("data-creative-width"));
               var height = misc.dimForAttr(a.getAttribute("data-creative-height"));
@@ -1536,11 +1562,11 @@ try {
           return adn.util.isObject(data) && adn.util.isNumber(data.amount) && data.amount > 0 && adn.util.isString(data.currency) && data.currency.length === 3;
         },
         postMessageToParent: function(msgObject) {
+          if (msgObject && msgObject.isDivContainer) {
+            return ev.handlePostMessage(msgObject);
+          }
           if (!adn.util.isObject(win.parent) || !win.parent.postMessage || !adn.util.isObject(msgObject)) {
             return adn.out.output("Attributes not sufficient", "postMessageToParent");
-          }
-          if (msgObject.isDivContainer) {
-            return ev.handlePostMessage(msgObject);
           }
           msgObject[ENUMS.postMessageSrcKey] = ENUMS.postMessageSrcValue;
           win.parent.postMessage(JSON.stringify(msgObject), '*');
@@ -1565,7 +1591,9 @@ try {
           }
           var dataDiv = doc.getElementById(DEBUG_UI_DATA_DIV_PREFIX + widgetSpec.widgetId);
           if (dataDiv && dataFromSpec.feedbackText) {
-            dataDiv.innerHTML += "<div><small>" + dataFromSpec.feedbackText + " sent - " + dataFromSpec.creativeId + "</small></div>";
+            var extrasString = (dataFromSpec.attention || []).join(", ");
+            var suffix = extrasString ? " - " + extrasString : "";
+            dataDiv.innerHTML += "<div><small>" + dataFromSpec.feedbackText + " sent - " + dataFromSpec.creativeId + suffix + "</small></div>";
           }
         },
         postMessageToChild: function(childFrame, msgObject) {
@@ -1707,20 +1735,18 @@ try {
             params: objParams
           };
         },
-        getScriptOverride: function(returnId) {
-          if (adn.util.isString(gScriptOverride)) {
-            return gScriptOverride;
+        getAndSetScriptOverride: function(returnId, specifiedScriptOverride) {
+          if (adn.util.isObject(gScriptOverride)) {
+            return returnId ? gScriptOverride.id : gScriptOverride.url;
           }
-          var scriptOverrideId = misc.getQueryParamsByName(SCRIPT_OVERRIDE_QSTRING);
-          gScriptOverride = "";
-          var internalScriptOverride = "";
+          var scriptOverrideId = specifiedScriptOverride || misc.getQueryParamsByName(SCRIPT_OVERRIDE_QSTRING);
+          gScriptOverride = null;
           if (adn.util.isString(scriptOverrideId) && scriptOverrideId.length > 0) {
-            internalScriptOverride = (adn.util.find(ENUMS.scriptOverride, function(so) {
+            gScriptOverride = (adn.util.find(ENUMS.scriptOverride, function(so) {
               return so.id === scriptOverrideId;
             }) || "");
-            gScriptOverride = internalScriptOverride ? internalScriptOverride.url : "";
           }
-          return returnId ? internalScriptOverride.id : gScriptOverride;
+          return returnId && gScriptOverride ? gScriptOverride.id : (gScriptOverride || {}).url;
         },
         gatherExclusions: function(dataSrc) {
           var arrayCheck = function(targetObj, sourceObj, param) {
@@ -1765,7 +1791,7 @@ try {
             // need this here because the userSegments needs to be an array that is stringified as an array
             paramsObj.userSegments = JSON.stringify(theArgs.userSegments);
           }
-          var scriptOverrideId = misc.getScriptOverride(true);
+          var scriptOverrideId = misc.getAndSetScriptOverride(true);
           if (scriptOverrideId) {
             paramsObj.so = scriptOverrideId;
           }
@@ -1869,7 +1895,8 @@ try {
           var hasSizeChange = false;
           adn.util.forEach(gAdSpecs, function(adSpec) {
             if ((!eventData.widgetId || eventData.widgetId === adSpec.widgetId) && JSON.stringify(adSpec.dims) !== JSON.stringify(info.contentDims)) {
-              if (info.contentDims.w === 0 || info.contentDims.h === 0) {
+              if (info.contentDims.w < 10 || info.contentDims.h < 10) {
+                // if less than 10, don't resize, probably a mistake.
                 if (adSpec.isPrebid) {
                   // If isPrebid, don't collapse to 0
                   adn.out.infoOutput("Prebid ad so don't collapse", JSON.stringify(adSpec), JSON.stringify(info));
@@ -1882,6 +1909,8 @@ try {
               }
               adSpec.dims = info.contentDims;
               hasSizeChange = true;
+              // if any one ad is in a div container, then really all of it is.
+              info.isDivContainer = info.isDivContainer || adSpec.isDivContainer;
             }
           });
           if (hasSizeChange || messageType === ENUMS.postMessageType.toParentPageLoad) {
@@ -1894,6 +1923,7 @@ try {
               retAdCount: info.ads.length,
               dims: info.contentDims,
               definedDims: info.definedDims,
+              isDivContainer: info.isDivContainer,
               ads: misc.generateAdData(null, info, prevGlobalAdSpecs),
               resizeToContent: resizeToContent
             };
@@ -2045,6 +2075,7 @@ try {
               creativeId: args.creativeId,
               lineItemId: args.lineItemId,
               viewability: args.viewability,
+              attention: args.attention,
               feedbackText: args.feedbackText
             };
             if (args.delayedImpression) {
@@ -2204,19 +2235,17 @@ try {
         };
 
         return {
+          getGdprAsObj: function(args) {
+            var localGdpr = args && adn.util.isDefined(args.gdpr) ? args.gdpr : adn.util.isDefined(gGdpr) ? gGdpr : null;
+            if (adn.util.isDefined(localGdpr)) {
+              return {gdpr: localGdpr === false ? 0 : localGdpr === true ? 1 : localGdpr};
+            }
+          },
           getEuConsentAsObj: function(args) {
-            var euConsent = args && args.consentString ? args.consentString : cookies.get("euconsent-v2") || cookies.get("euconsent");
+            var euConsent = args && args.consentString ? args.consentString : gConsentString ? gConsentString : cookies.get("euconsent-v2") || cookies.get("euconsent");
             if (adn.util.isStringWithChars(euConsent)) {
               return {consentString: euConsent};
             }
-          },
-          getAdnConsentAsObj: function() {
-            var adnConsent = cookies.get("adnconsent");
-            var consent = {};
-            if (adn.util.isStringWithChars(adnConsent)) {
-              consent.adnConsent = adnConsent;
-            }
-            return consent;
           },
           getAllIdsAsObj: function() {
             var theIds = [];
@@ -2608,7 +2637,7 @@ try {
                   });
                 }
 
-                var els = document.getElementsByClassName((wSpecArgs.targetClass || wSpecArgs.targetId) + "-show");
+                var els = doc.getElementsByClassName((wSpecArgs.targetClass || wSpecArgs.targetId) + "-show");
                 adn.util.forEach(els, function(el) {
                   el.style.display = wSpecArgs.display || "block";
                 });
@@ -2684,10 +2713,23 @@ try {
               serverSrc += misc.encodeAsUrlParams(cookies.getIdsAsObj(args), true);
               serverSrc += misc.encodeAsUrlParams(cookies.getAllIdsAsObj() || {}, true);
               serverSrc += misc.encodeAsUrlParams(cookies.getEuConsentAsObj(args) || {}, true);
+              serverSrc += misc.encodeAsUrlParams(cookies.getGdprAsObj(args) || {}, true);
 
-              if (args.gdpr) {
-                serverSrc += misc.encodeAsUrlParams({gdpr: args.gdpr}, true);
+              if (adn.util.isTopWindow()) {
+                var dims = adn.util.getWindowSize();
+                if (dims.width > 0 && dims.height > 0) {
+                  if (!misc.isUnitTest()) {
+                    serverSrc += misc.encodeAsUrlParams({viewport: dims.width + "x" + dims.height}, true);
+                  }
+                }
               }
+
+              if (win.screen && win.screen.availHeight) {
+                if (!misc.isUnitTest()) {
+                  serverSrc += misc.encodeAsUrlParams({screen: win.screen.availWidth + "x" + win.screen.availHeight}, true);
+                }
+              }
+
               if (!adn.util.isTopWindow()) {
                 var topWindowParams = {};
                 topWindowParams[TOP_WINDOW_DATA_ATTR] = false;
@@ -2740,10 +2782,13 @@ try {
         var mViewabilityRunner = false,
           gSendEventLocs = [];
 
-        var sendEvent = function(eventLoc, spec, feedbackText, network) {
+        var sendEvent = function(eventLoc, spec, feedbackText, network, extraParams, sendAsBeacon) {
           var loc = eventLoc;
           var eventLocIsComplete = !spec || !spec.rt;
           try {
+            if (win.screen && win.screen.availHeight) {
+              loc += misc.encodeAsUrlParams({screen: win.screen.availWidth + "x" + win.screen.availHeight}, true);
+            }
             if (!eventLocIsComplete) {
               loc = loc + misc.encodeAsUrlParams({rt: spec.rt}, true);
             }
@@ -2757,34 +2802,42 @@ try {
               gSendEventLocs.push(loc);
               adn.out.devOutput(feedbackText + " would have been sent if this was not a previewed ad", "sending" + feedbackText + "Event", loc);
             } else {
-              var ajax = adn.util.getNewAjax(eventLocIsComplete ? "GET" : "POST", loc, function() {
-                if (ajax.readyState && ajax.readyState !== 4) {
-                  return false;
-                }
-                if ((!ajax.status || ajax.status === 200) && adn.util.isStringWithChars(ajax.responseText)) {
-                  var jsonResponse = {};
-                  try {
-                    jsonResponse = JSON.parse(ajax.responseText);
-                  } catch (e) {
-                    return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
-                  }
-                  if (jsonResponse && jsonResponse.metaData && adn.util.hasProperties(jsonResponse.metaData)) {
-                    cookies.writeAdvLs(jsonResponse.metaData, jsonResponse.network);
-                  }
-                }
-              });
-              var canAccessLocalStorage = misc.canAccessLocalStorage();
-              ajax.withCredentials = !misc.isTestAddress(loc) && canAccessLocalStorage;
-              var metaData;
-              if (canAccessLocalStorage && (!gWindowStats || !gWindowStats.metaData)) {
-                metaData = misc.setAndReturnMetaData(null, network);
-              } else {
-                metaData = gWindowStats.metaData;
+              var locWithExtraParams = loc;
+              if (extraParams) {
+                locWithExtraParams += misc.encodeAsUrlParams(extraParams, true);
               }
-              if (metaData) {
-                ajax.send(JSON.stringify(metaData));
+              if (sendAsBeacon && win.navigator && win.navigator && !misc.isUnitTest()) {
+                win.navigator.sendBeacon(locWithExtraParams);
               } else {
-                ajax.send();
+                var ajax = adn.util.getNewAjax(eventLocIsComplete ? "GET" : "POST", locWithExtraParams, function() {
+                  if (ajax.readyState && ajax.readyState !== 4) {
+                    return false;
+                  }
+                  if ((!ajax.status || ajax.status === 200) && adn.util.isStringWithChars(ajax.responseText)) {
+                    var jsonResponse = {};
+                    try {
+                      jsonResponse = JSON.parse(ajax.responseText);
+                    } catch (e) {
+                      return adn.out.output(e, "ajax.onreadystatechange: catch block send event", ajax);
+                    }
+                    if (jsonResponse && jsonResponse.metaData && adn.util.hasProperties(jsonResponse.metaData)) {
+                      cookies.writeAdvLs(jsonResponse.metaData, jsonResponse.network);
+                    }
+                  }
+                });
+                var canAccessLocalStorage = misc.canAccessLocalStorage();
+                ajax.withCredentials = !misc.isTestAddress(loc) && canAccessLocalStorage;
+                var metaData;
+                if (canAccessLocalStorage && (!gWindowStats || !gWindowStats.metaData)) {
+                  metaData = misc.setAndReturnMetaData(null, network);
+                } else {
+                  metaData = gWindowStats.metaData;
+                }
+                if (metaData) {
+                  ajax.send(JSON.stringify(metaData));
+                } else {
+                  ajax.send();
+                }
               }
               gSendEventLocs.push(loc);
             }
@@ -2806,7 +2859,8 @@ try {
               adn.out.output("Missing a imp request location", "send" + feedbackText + "Impression", gAdLocs, impRequestProp);
               return;
             }
-            if (spec.displayStatus === ENUMS.displayStatus.displayed && spec[specProp] === ENUMS[specProp][constantCheckProp]) {
+            var isAttention = impRequestProp.indexOf("attention") > -1;
+            if (spec.displayStatus === ENUMS.displayStatus.displayed && (spec[specProp] === ENUMS[specProp][constantCheckProp] || isAttention)) {
               var defaultArgs = {
                 messageType: ENUMS.postMessageType.toParentAdVisibilityEvent,
                 widgetId: spec.widgetId,
@@ -2816,22 +2870,40 @@ try {
                 creativeSetId: spec.creativeSetId,
                 orderId: spec.orderId,
                 viewability: spec.viewability,
+                attention: spec.attention,
                 spec: spec,
                 callbackProp: callbackProp,
                 feedbackText: feedbackText,
                 isDivContainer: spec.isDivContainer,
                 impRequestLoc: impRequestLoc
               };
+
+              var afterComplete = function() {
+                spec[specProp] = ENUMS[specProp][constantPostProp];
+                if (!misc.isWidgetId(spec.widgetId)) {
+                  return adn.out.devOutput("Couldn't find a widget ID", "sendImpression", spec);
+                }
+                misc.postMessageToParent(defaultArgs);
+              };
+
               if (spec.impReg || (!misc.canAccessLocalStorage() && adn.lib.isParentTopWindow())) {
                 defaultArgs.delayedImpression = true;
+                afterComplete();
               } else {
-                sendEvent(impRequestLoc, spec, feedbackText, spec.network);
+                var extraParams = null;
+                adn.util.forEach(VIEWABILITY_THRESHOLDS, function(vt) {
+                  if (spec['viewability' + vt + 'Status'] === ENUMS.viewabilityStatus.viewed && spec.attention.indexOf(vt) < 0) {
+                    extraParams = extraParams || {};
+                    extraParams['v' + vt] = 1;
+                    spec.attention = spec.attention || [];
+                    spec.attention.push(vt);
+                  }
+                });
+                if (!isAttention || extraParams) {
+                  sendEvent(impRequestLoc, spec, feedbackText, spec.network, extraParams, isAttention);
+                  afterComplete();
+                }
               }
-              spec[specProp] = ENUMS[specProp][constantPostProp];
-              if (!misc.isWidgetId(spec.widgetId)) {
-                return adn.out.devOutput("Couldn't find a widget ID", "sendImpression", spec);
-              }
-              misc.postMessageToParent(defaultArgs);
             }
           });
         };
@@ -2848,6 +2920,9 @@ try {
           },
           sendViewableImpressions: function() {
             sendImpression('viewable', 'viewabilityStatus', 'viewed', 'viewSent', 'Viewable', 'onViewable');
+          },
+          sendAttentionImpressions: function() {
+            sendImpression('attention', 'attentionStatus', 'attention', 'attentionSent', 'Attention', 'onAttention');
           },
           cancelProximityListeners: function() {
             adn.util.detachEventListener(win, 'resize', readings.takeProximity);
@@ -3283,6 +3358,7 @@ try {
 
     adn.inIframe = (function() {
       var resizeToContent = ENUMS.resizeToContent.resize,
+        responseCtrStyle = "",
         windowEventSubs = {},
         onUpdateMetricsFromParent = [],
         onProcessAd = [],
@@ -3390,90 +3466,149 @@ try {
         }
       };
 
-      var timedObservation = function(adSpecParam, adId, threshold, maxTime, callback) {
-        var viewabilityTimeout = false;
-        var viewObserver = false;
-        var adSpecParamStatus = adSpecParam + "Status";
-
-        var notViewedEnum = ENUMS.viewabilityStatus.notViewed;
-        var viewedEnum = ENUMS.viewabilityStatus.viewed;
-        if (adSpecParam.indexOf("visibility") > -1) {
-          notViewedEnum = ENUMS.visibilityStatus.notVisible;
-          viewedEnum = ENUMS.visibilityStatus.visible;
-        }
-
-        var viewCallback = function(data) {
-          var adSpec = gAdSpecs[adId];
-          var now = new Date().getTime();
-
-          adSpec[adSpecParam] = adSpec[adSpecParam] || misc.getNewViewability();
-          adSpec[adSpecParamStatus] = adSpec[adSpecParamStatus] || notViewedEnum;
-
-          var successCallback = function() {
-            adSpec[adSpecParam].timeIntersect = adSpec[adSpecParam].timeIntersect + new Date().getTime() - adSpec[adSpecParam].timeStart;
-            adSpec[adSpecParamStatus] = viewedEnum;
-            adSpec[adSpecParam].eventSent = true;
-            callback(adSpec[adSpecParam]);
-            win.clearTimeout(viewabilityTimeout);
-            viewabilityTimeout = false;
-
-            viewObserver.disconnect();
-          };
-
-          if (adSpec[adSpecParamStatus] === notViewedEnum) {
-            if ((data[0].intersectionRatio > 0 && data[0].intersectionRatio >= threshold) || (adSpecParam === "visibility" && threshold === 0 && data[0].isIntersecting)) {
-              // is currently being viewed
-              adSpec[adSpecParam].timeStart = now;
-              if (maxTime < 5) {
-                adSpec[adSpecParam].timeIntersect = Math.max(maxTime, 1);
-                successCallback();
-              } else {
-                var successTime = maxTime - adSpec[adSpecParam].timeIntersect;
-                viewabilityTimeout = win.setTimeout(successCallback, successTime);
-              }
-              adSpec[adSpecParam].isBeingViewed = true;
-            } else {
-              // is currently unviewed
-              if (viewabilityTimeout && adSpec[adSpecParam].timeStart > 0) {
-                adSpec[adSpecParam].timeIntersect = adSpec[adSpecParam].timeIntersect + new Date().getTime() - adSpec[adSpecParam].timeStart;
-                adSpec[adSpecParam].timeStart = 0;
-                win.clearTimeout(viewabilityTimeout);
-                viewabilityTimeout = false;
-                adSpec[adSpecParam].isBeingViewed = false;
-              }
-            }
-          }
+      var registerSpecs = function(adId, type, threshold, maxTime, callback, creativeId, auId) {
+        // creativeId and auId only there for debugging
+        var id = adId + "|" + type;
+        gSectionSpecs[id] = {
+          id: id,
+          adId: adId,
+          type: type,
+          threshold: threshold,
+          maxTime: maxTime,
+          success: false,
+          callback: callback,
+          viewabilityTimeout: false,
+          auId: auId,
+          creativeId: creativeId
         };
-        viewObserver = new win.IntersectionObserver(viewCallback, {
-          root: null,
-          rootMargin: '0px',
-          threshold: threshold
-        });
-        viewObserver.observe(doc.getElementById(adId));
 
-        if (adSpecParam.indexOf("customTiming") < 0) {
+        var isCustomTiming = id.indexOf("customTiming") > -1;
+        if (!isCustomTiming) {
           return;
         }
-        adn.util.addEventListener(win, "beforeunload", function() {
-          var adSpec = gAdSpecs[adId];
 
-          if (!adSpec[adSpecParam]) {
-            return adn.out.output("Could not find matching adspec for view", "viewCallback", adSpec, adSpecParam);
-          }
+        var timeoutEventFunc = function() {
+          var sectionSpec = gSectionSpecs[id];
 
-          if (adSpec[adSpecParam].eventSent) {
+          if (sectionSpec.success) {
             return;
           }
 
-          if (adSpec[adSpecParam].isBeingViewed) {
-            adSpec[adSpecParam].timeIntersect = adSpec[adSpecParam].timeIntersect + new Date().getTime() - adSpec[adSpecParam].timeStart;
+          if (sectionSpec.isBeingViewed) {
+            sectionSpec.timeIntersect = (sectionSpec.timeIntersect || 0) + new Date().getTime() - sectionSpec.timeStart;
           }
 
-          if (adSpec[adSpecParam].timeIntersect > 0) {
-            callback(adSpec[adSpecParam]);
+          if (sectionSpec.timeIntersect > 0) {
+            callback(sectionSpec);
           }
-          adSpec[adSpecParam] = null;
+          sectionSpec = null;
+
+          adn.util.forEach(UNLOAD_EVENTS, function(event) {
+            adn.util.detachEventListener(win, event, timeoutEventFunc);
+          });
+        };
+        adn.util.forEach(UNLOAD_EVENTS, function(event) {
+          adn.util.addEventListener(win, event, timeoutEventFunc);
         });
+        gSectionSpecs[id].timeoutEventFunc = timeoutEventFunc;
+      };
+
+      var resetObserverTimeout;
+      var resetObserver = function(timeoutMillis) {
+        if (resetObserverTimeout) {
+          return;
+        }
+        resetObserverTimeout = win.setTimeout(function() {
+          if (!gObserverConfig || !adn.util.hasProperties(gSectionSpecs)) {
+            return;
+          }
+          adn.util.forEach(gAdSpecs, function(adSpec) {
+            var el = doc.getElementById(adSpec.adId);
+            gObserverConfig.unobserve(el);
+            gObserverConfig.observe(el);
+          });
+          if (adn.util.hasProperties(gSectionSpecs)) {
+            win.clearTimeout(resetObserverTimeout);
+            resetObserverTimeout = false;
+            resetObserver();
+          }
+        }, timeoutMillis || 550);
+      };
+
+      var successIds = [];
+      var viewThreshold = function(data) {
+        // find the latest intersection entry, which will give the best current estimate of intersection threshold.
+        var narrowedData = {};
+        adn.util.forEach(data, function(checkDatum) {
+          var idOfElement = checkDatum.target.id;
+          if (!narrowedData[idOfElement] || narrowedData[idOfElement].time < checkDatum.time) {
+            narrowedData[idOfElement] = checkDatum;
+          }
+        });
+
+        adn.util.forEach(narrowedData, function(datum) {
+          adn.util.forEach(gSectionSpecs, function(sectionSpec) {
+            var idOfElement = datum.target.id;
+            if (idOfElement !== sectionSpec.adId) {
+              return;
+            }
+
+            var viewedEnum = ENUMS.viewabilityStatus.viewed;
+            if (sectionSpec.type.indexOf("visibility") > -1) {
+              viewedEnum = ENUMS.visibilityStatus.visible;
+            }
+
+            var successCallback = function() {
+              successIds.push(sectionSpec.id);
+              gAdSpecs[sectionSpec.adId][sectionSpec.type + "Status"] = viewedEnum;
+              sectionSpec.timeIntersect = (sectionSpec.timeIntersect || 0) + new Date().getTime() - sectionSpec.timeStart;
+              console.log("SUCCESS!", sectionSpec.timeIntersect);
+              sectionSpec.callback(sectionSpec);
+              win.clearTimeout(sectionSpec.viewabilityTimeout);
+              sectionSpec.viewabilityTimeout = false;
+              sectionSpec.success = true;
+              if (sectionSpec.timeoutEventFunc) {
+                adn.util.forEach(UNLOAD_EVENTS, function(event) {
+                  adn.util.detachEventListener(win, event, sectionSpec.timeoutEventFunc);
+                });
+              }
+              win.clearTimeout(resetObserverTimeout);
+              resetObserverTimeout = false;
+              resetObserver(50);
+            };
+
+            var now = new Date().getTime();
+            if ((datum.intersectionRatio > 0 && datum.intersectionRatio >= sectionSpec.threshold) || (sectionSpec.threshold === 0 && datum.isIntersecting)) {
+              // is currently being viewed
+              if (sectionSpec.maxTime < 5) {
+                sectionSpec.timeStart = now;
+                sectionSpec.timeIntersect = Math.max(sectionSpec.maxTime, 1);
+                successCallback();
+              } else {
+                if (!sectionSpec.viewabilityTimeout && !sectionSpec.success) {
+                  sectionSpec.timeStart = now;
+                  var successTime = sectionSpec.maxTime - (sectionSpec.timeIntersect || 0);
+                  sectionSpec.viewabilityTimeout = win.setTimeout(successCallback, successTime);
+                }
+              }
+              sectionSpec.isBeingViewed = true;
+            } else {
+              // is currently unviewed
+              if (sectionSpec.viewabilityTimeout && sectionSpec.timeStart > 0) {
+                sectionSpec.timeIntersect = (sectionSpec.timeIntersect || 0) + new Date().getTime() - sectionSpec.timeStart;
+                sectionSpec.timeStart = 0;
+                win.clearTimeout(sectionSpec.viewabilityTimeout);
+                sectionSpec.viewabilityTimeout = false;
+                sectionSpec.isBeingViewed = false;
+              }
+            }
+            console.log(now, datum.target.id, datum.intersectionRatio, sectionSpec.id, sectionSpec.threshold, sectionSpec.timeStart, now - sectionSpec.timeStart, sectionSpec.timeIntersect);
+          });
+        });
+        adn.util.forEach(successIds, function(sid) {
+          delete gSectionSpecs[sid];
+        });
+        successIds.length = 0;
       };
 
       var processAd = function(iframeId, containerId, matchedAdCount) {
@@ -3487,6 +3622,20 @@ try {
         // isNested lets you know if the Adnuntius ad is a third-party creative in another ad server
         var isDivContainer = info.adsDivEl && info.adsDivEl.tagName.toLowerCase() === 'div' && (info.adsDivEl.className.indexOf(ENUMS.nativeClass) > -1 || (containerId !== adn.inIframe.getResponseCtrId() || containerId.indexOf(ENUMS.widgetIdPrefix) === 0));
         var isNested = (!isDivContainer && (!iframeId || !adn.lib.isParentTopWindow()) || (isDivContainer && (!iframeId || !adn.util.isTopWindow())));
+
+        var insElements = info.adsDivEl.getElementsByTagName("ins");
+        adn.util.forEach(insElements, function(insEl) {
+          // this is being done for responsive google ads
+          if (insEl.className && insEl.className.indexOf("dcmads") > -1 && insEl.style.display === "inline-block" && parseInt(insEl.style.width, 10) === 1 && parseInt(insEl.style.height, 10) === 1) {
+            adn.inIframe.setAsResponsive();
+          }
+        });
+        if (responseCtrStyle) {
+          var els = doc.getElementsByClassName("responseCtr");
+          adn.util.forEach(els, function(el) {
+            el.style.display = "block";
+          });
+        }
 
         if (matchedAdCount === 0) {
           misc.postMessageToParent({
@@ -3518,6 +3667,7 @@ try {
             isDivContainer: isDivContainer,
             network: info.network,
             adId: a.id,
+            auId: info.auId,
             dims: a.dims,
             subdomain: a.subdomain,
             definedDims: a.definedDims,
@@ -3531,8 +3681,10 @@ try {
             displayStatus: ENUMS.displayStatus.displayed,
             viewabilityStatus: ENUMS.viewabilityStatus.notViewed,
             visibilityStatus: ENUMS.visibilityStatus.notVisible,
+            attentionStatus: ENUMS.attentionStatus.notAttention,
             viewability: misc.getNewViewability(),
             visibility: misc.getNewViewability(),
+            attention: [],
             isPrebid: adn.util.isLoopable(externalContainers) && externalContainers.length > 0
           };
           gAdSpecs[a.id] = adSpecData;
@@ -3540,12 +3692,43 @@ try {
 
           if (misc.supportsIntersectionObserver()) {
             var adId = a.id;
-            timedObservation("visibility", adId, 0, 1, function() {
+
+            registerSpecs(adId, 'visibility', 0, 1, function() {
               readings.sendVisibilityImpressions();
+            }, adSpecData.creativeId, adSpecData.auId);
+
+            adn.util.forEach(VIEWABILITY_THRESHOLDS, function(vt) {
+              registerSpecs(adId, "viewability" + vt, vt / 100, 990, function() {
+                if (vt >= 95) {
+                  win.setTimeout(function() {
+                    // wait a tad to ensure all the other viewability events get registered
+                    readings.sendAttentionImpressions();
+                  }, 100);
+                }
+              }, adSpecData.creativeId, adSpecData.auId);
             });
-            timedObservation("viewability", adId, 0.5, 1000, function() {
-              readings.sendViewableImpressions();
+            adn.util.forEach(UNLOAD_EVENTS, function(event) {
+              adn.util.addEventListener(win, event, function() {
+                readings.sendAttentionImpressions();
+              });
             });
+            registerSpecs(adId, "viewability", 0.5, 1000, function() {
+              win.setTimeout(function() {
+                // just another timeout here to make sure the other viewability measures are triggered before sending info to adserver
+                readings.sendViewableImpressions();
+
+                function repeatUntilAttentionSent() {
+                  var adSpec = gAdSpecs[adId];
+                  if (adSpec.attentionStatus === ENUMS.attentionStatus.attentionSent || adSpec.attention.length === VIEWABILITY_THRESHOLDS.length) {
+                    return;
+                  }
+                  readings.sendAttentionImpressions();
+                  win.setTimeout(repeatUntilAttentionSent, 10000);
+                }
+                repeatUntilAttentionSent();
+
+              }, 5);
+            }, adSpecData.creativeId, adSpecData.auId);
           }
         });
 
@@ -3580,6 +3763,25 @@ try {
             processAdObj.func();
           }
         });
+
+        if (misc.supportsIntersectionObserver()) {
+          win.setTimeout(function() {
+            // get the observation going after the ads are being processed
+            adn.util.forEach(currentSetOfAds, function(adSpecData) {
+              // do this after onProcessAd to ensure that all recordInScreen are already registered
+              gObserverConfig = gObserverConfig || new win.IntersectionObserver(viewThreshold, {
+                root: null,
+                rootMargin: '0px',
+                threshold: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]
+              });
+              var el = doc.getElementById(adSpecData.adId);
+              gObserverConfig.observe(el);
+            });
+
+            resetObserver();
+          }, 10);
+        }
+
         onProcessAd = adn.util.filter(onProcessAd, function(processAdObj) {
           return !currentSetOfAds[processAdObj.adId];
         });
@@ -3622,7 +3824,7 @@ try {
           if (!adn.util.isDefined(adId) || !adn.util.isDefined(customArgs)) {
             return adn.out.output("Missing an ad ID to perform the custom event", "sendCustomEvent", args, customArgs);
           }
-          var sendCustomEventFunc = function(adSpec) {
+          var actuallySendCustomEvent = function(adSpec) {
             if (!adn.util.isObject(adSpec)) {
               return adn.out.output("Need an ad spec to send a custom event", "sendCustomEvent", gAdSpecs, args, customArgs);
             }
@@ -3665,9 +3867,14 @@ try {
               if (misc.isTestAddress(loc)) {
                 adn.out.devOutput("Custom request loc being send", "sending", adSpec, loc);
               } else {
-                var ajax = adn.util.getNewAjax("POST", loc);
-                ajax.withCredentials = misc.canAccessLocalStorage() && !misc.isTestAddress(loc);
-                ajax.send(JSON.stringify({events: checkedEventArray}));
+                var dataForSending = JSON.stringify({events: checkedEventArray});
+                if (win.navigator && win.navigator && !misc.isUnitTest()) {
+                  win.navigator.sendBeacon(loc, dataForSending);
+                } else {
+                  var ajax = adn.util.getNewAjax("POST", loc);
+                  ajax.withCredentials = misc.canAccessLocalStorage() && !misc.isTestAddress(loc);
+                  ajax.send(dataForSending);
+                }
               }
             } catch (e) {
               adn.out.output("sending a custom event failed", e, gAdSpecs, args, customArgs);
@@ -3682,7 +3889,7 @@ try {
                 messageType: ENUMS.postMessageType.toParentCustomEvent
               });
             }
-            sendCustomEventFunc(adSpec);
+            actuallySendCustomEvent(adSpec);
           };
           var adSpec = findAdSpec(pAdSpec, adId);
           if (adSpec) {
@@ -3734,12 +3941,13 @@ try {
           }
 
           var doObservation = function() {
-            timedObservation("customTiming" + customEventType + "-" + misc.uuid(), adId, threshold, maxTime, function(data) {
+            registerSpecs(adId, "customTiming" + customEventType + "-" + misc.uuid(), threshold, maxTime, function(data) {
               if (config && config.recordType === 'intersection') {
-                return config.callback({adId: adId, id: customEventType, timeIntersect: data.timeIntersect, criteriaMet: data.timeIntersect >= maxTime});
+                return config.callback({adId: adId, id: customEventType, timeIntersect: data.timeIntersect, criteriaMet: data.timeIntersect + 500 >= maxTime});
               }
-              adn.inIframe.sendCustomEvent(args, {customType: customEventType, customValue: Math.min(data.timeIntersect, maxTime)});
-            });
+              var currentSpec = gAdSpecs[adId] ? gAdSpecs[adId] : null;
+              adn.inIframe.sendCustomEvent(args, {customType: customEventType, customValue: Math.min(data.timeIntersect, maxTime)}, currentSpec);
+            }, adSpec ? adSpec.creativeId : null);
           };
           if (adSpec) {
             doObservation();
@@ -3778,6 +3986,10 @@ try {
         },
         blockResizeToContent: function() {
           resizeToContent = ENUMS.resizeToContent.none;
+        },
+        setAsResponsive: function() {
+          resizeToContent = ENUMS.resizeToContent.none;
+          responseCtrStyle = "block";
         },
         isResizeToContent: function() {
           // here for backwards-compatibility
@@ -3839,7 +4051,7 @@ try {
             });
             var renderedLoc = validRenderedInfo[0].loc + "?tzo=" + new Date().getTimezoneOffset();
             return adn.lib.sendRenderedImps(tokens, renderedLoc, network);
-          } catch(e) {
+          } catch (e) {
             adn.out.devOutput("Problem with rendered imps", "processRenderedImps", renderedImpsIframeUrls, e);
           }
           return false;
@@ -3989,6 +4201,7 @@ try {
             mode: pArgs.mode || argsAu.mode,
             format: ENUMS.validFormats[argsAu.format || "--"],
             clickTrackingUrl: argsAu.clickTrackingUrl || "",
+            clickTrackingUrlEsc: argsAu.clickTrackingUrlEsc || "",
             creativeTag: argsAu.creativeTag || false,
             lineItemId: argsAu.lineItemId,
             creativeId: argsAu.creativeId,
@@ -3998,8 +4211,10 @@ try {
             creativeData: argsAu.creativeData,
             creativeContent: argsAu.creativeContent,
             network: pArgs.network || argsAu.network,
+            ranked: pArgs.ranked || argsAu.ranked,
             requestMode: ENUMS.requestMode[pArgs.requestMode || argsAu.requestMode] || ENUMS.requestMode.DEFAULT,
             networkId: argsAu.networkId || pArgs.networkId,
+            timingFunc: argsAu.timingFunc || pArgs.timingFunc,
             widgetId: argsAu.widgetId || ENUMS.widgetIdPrefix + randomNum,
             hash: argsAu.hash,
             auW: argsAu.auW || argsAu.creativeWidth || 0,
@@ -4069,8 +4284,24 @@ try {
             isolateSubFrame: adn.util.isDefined(argsAu.isolateSubFrame) ? argsAu.isolateSubFrame : (pArgs.isolateSubFrame || false),
             serverUrl: locs.imp,
             resizeOnPageLoad: adn.util.isDefined(argsAu.resizeOnPageLoad) ? argsAu.resizeOnPageLoad : pArgs.resizeOnPageLoad,
-            viewability: misc.getNewViewability()
+            viewability: misc.getNewViewability(),
+            attention: []
           };
+          if (adn.util.isStringWithChars(argsAu.scriptOverride) || adn.util.isStringWithChars(pArgs.scriptOverride)) {
+            misc.getAndSetScriptOverride(false, argsAu.scriptOverride || pArgs.scriptOverride);
+          }
+          try {
+            if ((data.ctx || "").indexOf("context.html") < 0 && (win.parent.location.href || win.parent.document.referrer)) {
+              data.ctx = argsAu.ctx || pArgs.ctx || win.parent.location.href || win.parent.document.referrer;
+              if ((data.ctx || "").indexOf("safeframe.googlesyndication.com") > -1) {
+                data.ctx = argsAu.ctx || pArgs.ctx || win.parent.document.referrer || win.parent.location.href;
+              }
+            }
+          } catch (e) {
+            if ((data.ctx || "").indexOf("safeframe.googlesyndication.com") > -1) {
+              data.ctx = argsAu.ctx || pArgs.ctx || doc.referrer || win.location.href;
+            }
+          }
           if (data.auId && !data.creativeTag) {
             data.serverUrl += "&auId=" + data.auId;
           }
@@ -4242,13 +4473,20 @@ try {
               }
 
               var method = "POST",
-                url = previewLoc + "context=" + creative.networkId || creative.network;
+                url = previewLoc + "context=" + (creative.networkId || creative.network);
+              var ctx = gWidgetSpecs[creative.widgetId].ctx;
+              if (adn.util.isStringWithChars(ctx)) {
+                url += misc.encodeAsUrlParams({ctx: ctx}, true);
+              }
               if (adn.util.isString(creative.creativeId)) {
                 method = "GET";
                 url += "&creativeId=" + creative.creativeId;
                 if (creative.apiPreviewEnabled) {
                   var envType = ENUMS.env[creative.env || 'production'] || ENUMS.env.production;
                   url = envType.api + creative.creativeId + "?context=" + (creative.networkId || creative.network);
+                  if (adn.util.isStringWithChars(ctx)) {
+                    url += misc.encodeAsUrlParams({ctx: ctx}, true);
+                  }
                   if (creative.hash) {
                     url += "&hash=" + creative.hash;
                   }
@@ -4360,7 +4598,11 @@ try {
               impRequestLoc += misc.encodeAsUrlParams(cookies.getIdsAsObj(firstAdUnitInCollection), true);
               impRequestLoc += misc.encodeAsUrlParams(cookies.getAllIdsAsObj() || {}, true);
               impRequestLoc += misc.encodeAsUrlParams(cookies.getEuConsentAsObj(firstAdUnitInCollection) || {}, true);
-              var scriptOverrideId = misc.getScriptOverride(true);
+              impRequestLoc += misc.encodeAsUrlParams(cookies.getGdprAsObj(firstAdUnitInCollection) || {}, true);
+              if (firstAdUnitInCollection.ranked === true) {
+                impRequestLoc += misc.encodeAsUrlParams({ranked: true}, true);
+              }
+              var scriptOverrideId = misc.getAndSetScriptOverride(true);
               if (scriptOverrideId) {
                 impRequestLoc += misc.encodeAsUrlParams({so: scriptOverrideId}, true);
               }
@@ -4371,10 +4613,24 @@ try {
 
               var responseStyle = gFeedback.inScreen === ENUMS.feedback.inScreen.inAdUnit || gLpLi ? "format=json" : firstAdUnitInCollection.native ? "tt=native" : "tt=multi";
               impRequestLoc += "&" + responseStyle;
-              if (firstAdUnitInCollection.gdpr) {
-                impRequestLoc += misc.encodeAsUrlParams({gdpr: firstAdUnitInCollection.gdpr} || {}, true);
+              if (win.screen && win.screen.availHeight) {
+                if (!misc.isUnitTest()) {
+                  impRequestLoc += misc.encodeAsUrlParams({screen: win.screen.availWidth + "x" + win.screen.availHeight}, true);
+                }
+              }
+              if (adn.util.isTopWindow()) {
+                var dims = adn.util.getWindowSize();
+                if (dims.width > 0 && dims.height > 0) {
+                  if (!misc.isUnitTest()) {
+                    impRequestLoc += misc.encodeAsUrlParams({viewport: dims.width + "x" + dims.height}, true);
+                  }
+                }
               }
               if (adUnitsToSend.creativeTag) {
+                var rd = misc.clone(requestData);
+                rd.ctx = rd.context;
+                delete rd.context;
+                impRequestLoc += misc.encodeAsUrlParams(rd, true);
                 impRequestLoc = misc.updateSrc(adUnitsToSend, impRequestLoc);
               }
               var beforeAjax = Date.now();
@@ -4407,6 +4663,9 @@ try {
                     duplicateFilter: misc.getParam(ads, 'duplicateFilter')
                   };
                   gTripTime = Date.now() - beforeAjax;
+                  if (adn.util.isFunction(firstAdUnitInCollection.timingFunc)) {
+                    firstAdUnitInCollection.timingFunc(ads, gTripTime);
+                  }
                   dom.distributeComposedAds(ads);
                   return;
                 }
@@ -4987,7 +5246,6 @@ try {
         var locs = adn.lib.getAdnDataLocs(args);
         var serverUrl = locs[config.locKey];
         serverUrl += misc.encodeAsUrlParams(cookies.getEuConsentAsObj(args) || {}, true);
-        serverUrl += misc.encodeAsUrlParams(cookies.getAdnConsentAsObj() || {}, true);
         var postedData;
         if (config.pick && config.pick.length) {
           var qArgs = misc.copyArgValues({}, args, config.pick) || {};
@@ -5224,23 +5482,14 @@ try {
     })();
 
     (function() {
-      console.log(win);
-      console.log(win.parent);
-      console.log(doc.referrer);
-      console.log("what is going on?");
-      console.log(win.parent.document);
-      console.log(win.parent.document.getElementsByTagName("body"));
-      console.log("even more");
-      console.log(win.parent.parent.document);
-      console.log(win.parent.parent.document.getElementsByTagName("body"));
-
-      if (!isDevScript) {
-        var scriptOverride = misc.getScriptOverride();
-        if (scriptOverride) {
+      if (!isDevScript && adn.util.isTopWindow()) {
+        var scriptOverrideUrl = misc.getAndSetScriptOverride();
+        var scriptServerOverrideId = misc.getQueryParamsByName(SCRIPT_OVERRIDE_SERVER_QSTRING);
+        if (scriptOverrideUrl && !scriptServerOverrideId) {
           var loadDevScript = function() {
             var scriptEl = doc.createElement('script');
             scriptEl.id = DEV_SCRIPT_ID;
-            scriptEl.src = scriptOverride;
+            scriptEl.src = scriptOverrideUrl;
             doc.body.appendChild(scriptEl);
           };
           if (doc.body) {
@@ -5261,8 +5510,48 @@ try {
       ev.registerListeners();
       ev.setFeedbackOptions();
 
+      var cmpTimeout;
+      var loopCounter = 0;
+
+      function safeTopWindow() {
+        try {
+          return win.top.__tcfapi;
+        } catch (e) {
+          adn.out.devOutput("Can't reach top window", e);
+        }
+      }
+
+      function checkCmpConsentString() {
+        if (!cmpTimeout) {
+          return;
+        }
+        var __tcfapi = win.__tcfapi || safeTopWindow();
+        loopCounter++;
+
+        if (loopCounter > 10) {
+          clearTimeout(cmpTimeout);
+          return;
+        }
+        if (__tcfapi && adn.util.isFunction(__tcfapi)) {
+          clearTimeout(cmpTimeout);
+          __tcfapi('addEventListener', 2, function(tcData, success) {
+            if (success) {
+              if (tcData.hasOwnProperty('gdprApplies')) {
+                gGdpr = tcData.gdprApplies;
+              }
+              if (tcData.hasOwnProperty('tcString')) {
+                gConsentString = tcData.tcString;
+              }
+            }
+          });
+        }
+      }
+
+      cmpTimeout = win.setInterval(checkCmpConsentString, 250);
+
       var executeCalls = function() {
         try {
+          checkCmpConsentString();
           var call;
           while ((call = adn.calls.shift())) {
             try {
