@@ -212,7 +212,9 @@ try {
       gAdLocs = {},
       gAdSpecs = {},
       gSectionSpecs = {},
-      gObserverConfig = null,
+      gGenObserverConfig = null,
+      gViewableConfig = null,
+      gVisibleConfig = null,
       gComposedAds = {},
       gWindowStats = {},
       gRequestFilterManager = {},
@@ -239,7 +241,7 @@ try {
       STORAGE_ADV_METADATA_KEY = "adn.metaData",
       STORAGE_CONV_METADATA_KEY = "adn.conv",
       STORAGE_DAT_KEY = "adn.data",
-      VIEWABILITY_THRESHOLDS = [60, 70, 80, 90],//, 95, 100],
+      VIEWABILITY_THRESHOLDS = [60, 70, 80, 90, 95, 100],
       STORAGE_DAT_SEGMENTS_KEY = "adn.data.segments",
       SYNC_BOUNDARY = 6 * 3600 * 1000, // 6 hours in milliseconds
       PICK_DATA_PARAMETERS = ['auId', 'widgetId', 'auW', 'auH', 'w', 'h', 'definedDims', 'resizeToContent', 'stack', 'ifrStyle', 'targetStyle', 'retAdsW', 'retAdsH', 'ads', 'dims', 'retAdCount', 'targetId', 'replacements', 'keywords', 'kv', 'userSegments', 'c', 'ps', 'auml', 'floorPrice', 'requestArgs', 'targetClass'],
@@ -2833,6 +2835,7 @@ try {
                 } else {
                   metaData = gWindowStats.metaData;
                 }
+                console.log("EVENTSENT: ", locWithExtraParams);
                 if (metaData) {
                   ajax.send(JSON.stringify(metaData));
                 } else {
@@ -3513,25 +3516,20 @@ try {
         gSectionSpecs[id].timeoutEventFunc = timeoutEventFunc;
       };
 
-      var resetObserverTimeout;
       var resetObserver = function(timeoutMillis) {
-        if (resetObserverTimeout) {
-          return;
-        }
-        resetObserverTimeout = win.setTimeout(function() {
-          if (!gObserverConfig || !adn.util.hasProperties(gSectionSpecs)) {
+        win.setTimeout(function() {
+          if (!gGenObserverConfig || !adn.util.hasProperties(gSectionSpecs)) {
             return;
           }
+
           adn.util.forEach(gAdSpecs, function(adSpec) {
             var el = doc.getElementById(adSpec.adId);
-            gObserverConfig.unobserve(el);
-            gObserverConfig.observe(el);
+            gGenObserverConfig.unobserve(el);
+            gGenObserverConfig.observe(el);
+
+            gViewableConfig.unobserve(el);
+            gViewableConfig.observe(el);
           });
-          if (adn.util.hasProperties(gSectionSpecs)) {
-            win.clearTimeout(resetObserverTimeout);
-            resetObserverTimeout = false;
-            resetObserver();
-          }
         }, timeoutMillis || 550);
       };
 
@@ -3548,6 +3546,10 @@ try {
 
         adn.util.forEach(narrowedData, function(datum) {
           adn.util.forEach(gSectionSpecs, function(sectionSpec) {
+            if (sectionSpec.success) {
+              return;
+            }
+
             var idOfElement = datum.target.id;
             if (idOfElement !== sectionSpec.adId) {
               return;
@@ -3562,7 +3564,6 @@ try {
               successIds.push(sectionSpec.id);
               gAdSpecs[sectionSpec.adId][sectionSpec.type + "Status"] = viewedEnum;
               sectionSpec.timeIntersect = (sectionSpec.timeIntersect || 0) + new Date().getTime() - sectionSpec.timeStart;
-              console.log("SUCCESS!", sectionSpec.timeIntersect);
               sectionSpec.callback(sectionSpec);
               win.clearTimeout(sectionSpec.viewabilityTimeout);
               sectionSpec.viewabilityTimeout = false;
@@ -3572,8 +3573,6 @@ try {
                   adn.util.detachEventListener(win, event, sectionSpec.timeoutEventFunc);
                 });
               }
-              win.clearTimeout(resetObserverTimeout);
-              resetObserverTimeout = false;
               resetObserver(50);
             };
 
@@ -3588,6 +3587,7 @@ try {
                 if (!sectionSpec.viewabilityTimeout && !sectionSpec.success) {
                   sectionSpec.timeStart = now;
                   var successTime = sectionSpec.maxTime - (sectionSpec.timeIntersect || 0);
+                  win.clearTimeout(sectionSpec.viewabilityTimeout);
                   sectionSpec.viewabilityTimeout = win.setTimeout(successCallback, successTime);
                 }
               }
@@ -3602,7 +3602,6 @@ try {
                 sectionSpec.isBeingViewed = false;
               }
             }
-            console.log(now, datum.target.id, datum.intersectionRatio, sectionSpec.id, sectionSpec.threshold, sectionSpec.timeStart, now - sectionSpec.timeStart, sectionSpec.timeIntersect);
           });
         });
         adn.util.forEach(successIds, function(sid) {
@@ -3729,6 +3728,29 @@ try {
 
               }, 5);
             }, adSpecData.creativeId, adSpecData.auId);
+
+            // do this after onProcessAd to ensure that all recordInScreen are already registered
+            gGenObserverConfig = gGenObserverConfig || new win.IntersectionObserver(viewThreshold, {
+              root: null,
+              rootMargin: '0px',
+              threshold: [0, 0.1, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 0.95, 1]
+            });
+            var el = doc.getElementById(adSpecData.adId);
+            gGenObserverConfig.observe(el);
+
+            gViewableConfig = gViewableConfig || new win.IntersectionObserver(viewThreshold, {
+              root: null,
+              rootMargin: '0px',
+              threshold: 0.5
+            });
+            gViewableConfig.observe(el);
+
+            gVisibleConfig = gVisibleConfig || new win.IntersectionObserver(viewThreshold, {
+              root: null,
+              rootMargin: '0px',
+              threshold: 0
+            });
+            gVisibleConfig.observe(el);
           }
         });
 
@@ -3763,24 +3785,6 @@ try {
             processAdObj.func();
           }
         });
-
-        if (misc.supportsIntersectionObserver()) {
-          win.setTimeout(function() {
-            // get the observation going after the ads are being processed
-            adn.util.forEach(currentSetOfAds, function(adSpecData) {
-              // do this after onProcessAd to ensure that all recordInScreen are already registered
-              gObserverConfig = gObserverConfig || new win.IntersectionObserver(viewThreshold, {
-                root: null,
-                rootMargin: '0px',
-                threshold: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]
-              });
-              var el = doc.getElementById(adSpecData.adId);
-              gObserverConfig.observe(el);
-            });
-
-            resetObserver();
-          }, 10);
-        }
 
         onProcessAd = adn.util.filter(onProcessAd, function(processAdObj) {
           return !currentSetOfAds[processAdObj.adId];
