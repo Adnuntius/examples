@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Adnuntius Ad Tag Generator and Tester</title>
+</head>
+<body><h3>Adnuntius Ad Tag Generator and Tester</h3>
+<hr>
+<p><small>Test for Hitta.se using an Adnami script. Ad request: auId = 51be81</small></p>
+<div id="adn-51be81" style="display: none"></div>
+<script src="https://cdn.adnuntius.com/adn.js" async></script>
+<script>
+window.adn = window.adn || {}; adn.calls = adn.calls || [];
+adn.calls.push(function() {
+   adn.request({  network: '2ac7c', adUnits: [
+      { auId: '51be81', auW: '1000', auH: '1000', kv: { 'hitta': ['test'] } }
+   ]});
+});
+</script>
+</body>
+</html>
